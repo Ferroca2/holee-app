@@ -1,19 +1,51 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import * as admin from 'firebase-admin';
+import { onRequest } from 'firebase-functions/v2/https';
+// import { onSchedule } from 'firebase-functions/v2/scheduler';
+// import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 
-import {onRequest} from 'firebase-functions/v2/https';
-import * as logger from 'firebase-functions/logger';
+admin.initializeApp();
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+// Import and declare global variables
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+// Import all CRON expressions
+
+// Identify the current project
+export const isProd = process.env.GCLOUD_PROJECT === 'holee-app';
+export const isDev = process.env.GCLOUD_PROJECT !== 'holee-app';
+export const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+
+export const origin = isEmulator ? 'http://localhost:8080' : `https://holee-app${isDev ? '-dev' : ''}.web.app`;
+
+// const aiSecrets = ['OPENAI_API_KEY', 'ZAPI_TOKEN', 'GROQ_API_KEY', 'OPENAI_API_KEY___ADITIONAL_INFO',
+//         'OPENAI_API_KEY___BIRTHDAY', 'OPENAI_API_KEY___CLIENT_DATA_COLLECTOR', 'OPENAI_API_KEY___CONFIRM_CLIENT_DATA',
+//         'OPENAI_API_KEY___CONFIRM_HUMAN', 'OPENAI_API_KEY___EVENTS', 'OPENAI_API_KEY___EXTERNAL_EVENTS',
+//         'OPENAI_API_KEY___GENERAL_EVENTS', 'OPENAI_API_KEY___GENERAL_INFORMATIONS', 'OPENAI_API_KEY___GREETINGS',
+//         'OPENAI_API_KEY___HUMANIZER', 'OPENAI_API_KEY___IDENTIFY_EVENTS', 'OPENAI_API_KEY___MAIN',
+//         'OPENAI_API_KEY___MENU', 'OPENAI_API_KEY___NON_CLIENT_DATA_COLLECTOR', 'OPENAI_API_KEY___QUEUE',
+//         'OPENAI_API_KEY___TABLE', 'OPENAI_API_KEY___WEEKDAY', 'OPENAI_API_KEY___IMAGE_TRANSCRIPTION',
+//     ]
+
+
+/***************************************************/
+/******************** FUNCTIONS ********************/
+/***************************************************/
+
+/* WhatsApp */
+
+export const onMessageReceiveWebhook = onRequest(
+    {
+        cors: true,
+        secrets: ['ZAPI_TOKEN'],
+    },
+    (...args) => import('./wpp/zapi/webhooks/onMessageReceiveWebhook')
+        .then(async m => { await m.default(...args); })
+);
+
+/* AI Service */
+
+
+// export * as firestore from './firestore';
+
+// export * as pubsub from './pubsub';
+
+// export * as webService from './webService';

@@ -14,10 +14,10 @@
   },
   "main": "dist/index.js",
   "dependencies": {
-    "@openai/agents": "^0.0.11",
-    "dotenv": "^17.2.0",
-    "firebase-admin": "^12.6.0",
-    "firebase-functions": "^6.0.1",
+    "@google-cloud/pubsub": "^4.9.0",
+    "axios": "^1.10.0",
+    "firebase-admin": "^12.1.0",
+    "firebase-functions": "^5.0.0",
     "zod": "<=3.25.67"
   },
   "devDependencies": {
