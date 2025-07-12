@@ -5,7 +5,7 @@ import { AdminBaseRef } from '../domain';
 export const FIRESTORE_IN_OPERATOR_LIMIT = 30;
 export const FIRESTORE_BATCH_OPERATIONS_LIMIT = 500;
 
-export function isFirestoreValue(value: any): boolean {
+export function isFirestoreValue(value: any): boolean { // eslint-disable-line @typescript-eslint/no-explicit-any
     return value instanceof admin.firestore.FieldValue;
 }
 
