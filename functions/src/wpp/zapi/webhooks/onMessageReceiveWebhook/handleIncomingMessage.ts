@@ -147,7 +147,6 @@ async function handleConversationMessage(
     if (params.isEdit) {
         // Se é uma edição, tenta buscar a mensagem existente
         const existingMessage = await MessagesRepository.getMessageById(params.phone, messageId);
-
         if (existingMessage) {
             // Se a mensagem existe, atualiza apenas o payload e timestamp
             const updatedMessage: Partial<Message> = {
