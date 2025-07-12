@@ -167,9 +167,6 @@ export default async function onMessageReceive(req: Request, res: Response) {
             return res.status(200).json({ message: 'Unsupported message type or empty content.' });
         }
 
-        // Verify if the payload is a buttonRepply
-        const isButtonReply = buttonReply !== undefined;
-
         // Validate the instanceId of the payload
         if (!instanceId) {
             logger.warn('Missing instanceId.');
@@ -386,12 +383,7 @@ function extractMessagePayload(
         // Handle image payloads
         if (input.image) {
             const imageUrl = input.image.imageUrl
-                ? input.image.imageUrl
-                : (
-                    isDev
-                        ? 'https://firebasestorage.googleapis.com/v0/b/dionisio-crm-dev.firebasestorage.app/o/generic-placeholders%2FFailed_to_receive_image.png?alt=media&token=880013da-ee6b-4902-9998-59fc97eff4f8'
-                        : 'https://firebasestorage.googleapis.com/v0/b/dionisio-crm.appspot.com/o/generic-placeholders%2FFailed_to_receive_image.png?alt=media&token=584f0dc3-4b4b-4767-8b07-73e8c5af4647'
-                );
+                ? input.image.imageUrl : 'no-image-url';
 
             return Messaging.create.image(imageUrl, input.image.caption);
         }
