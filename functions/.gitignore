@@ -1,10 +1,53 @@
-# Compiled JavaScript files
-lib/**/*.js
-lib/**/*.js.map
+# Compiled JavaScript and Source Maps
+dist/**/*.js
+dist/**/*.js.map
+dist/**/*.d.ts
 
-# TypeScript v1 declaration files
+# TypeScript Build Artifacts
+*.tsbuildinfo
+
+# TypeScript v1 Declaration Files (if applicable)
 typings/
 
-# Node.js dependency directory
+# Node.js Dependency Directory
 node_modules/
+
+# Local Configuration Files
 *.local
+*.env
+.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Firebase Cache and Emulator Files
+.firebase/
+firebase-debug.log
+firebase-debug.log.*
+
+# Package Manager Lock Files
+package-lock.json
+yarn.lock
+
+# IDE-specific and System Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Optional Dependency Directory
+functions/node_modules/
+
+# Output from Firebase Deploys
+functions/lib/
+functions/dist/
+
+# Starkbank
+privateKey.pem
+
+# Jest stare reports
+jest-stare/
