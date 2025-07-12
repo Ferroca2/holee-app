@@ -95,7 +95,7 @@ export default async function onMessageReceive(req: Request, res: Response) {
             // Transform to LocationPayload
             location,
 
-            // Transform to ButtonActionsPayload, ImageButtonActionsPayload, VideoButtonActionsPayload or //TODO: Add other payloads comming from hydratedTemplate
+            // Transform to ButtonActionsPayload, ImageButtonActionsPayload, VideoButtonActionsPayload or others payloads
             hydratedTemplate,
 
             // Transform to CarouselPayload
