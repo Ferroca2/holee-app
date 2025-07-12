@@ -26,7 +26,6 @@ export const origin = isEmulator ? 'http://localhost:8080' : `https://holee-app$
 //     ]
 
 
-
 /***************************************************/
 /******************** FUNCTIONS ********************/
 /***************************************************/
@@ -43,6 +42,7 @@ export const onMessageReceiveWebhook = onRequest(
 );
 
 /* AI Service */
+
 
 // export * as firestore from './firestore';
 

@@ -12,6 +12,7 @@ export interface CandidateRelevantData {
 
     linkedin?: {
         url?: string;                   // url to linkedin profile
+
     // parsed informations
     }
 
