@@ -5,6 +5,7 @@ import Messaging, { MessagePayload, ButtonActionsPayload, CarouselPayload } from
 
 // Import the message handlers
 import { handleIncomingMessage } from './handleIncomingMessage';
+import { handleOutgoingMessage } from './handleOutgoingMessage';
 
 /**
  * Handles webhook events for receiving WhatsApp messages.
@@ -196,6 +197,27 @@ export default async function onMessageReceive(req: Request, res: Response) {
                 waitingMessage: waitingMessage === true,
 
                 fromMe,
+                participantPhone,
+                senderName,
+                senderPhoto,
+            });
+        } else {
+            await handleOutgoingMessage({
+                isGroup,
+
+                phone,
+                chatName,
+                photo,
+
+                messageId,
+                referenceMessageId,
+                isEdit,
+                momment,
+                messagePayload,
+                waitingMessage: waitingMessage === true,
+
+                fromMe,
+                fromApi,
                 participantPhone,
                 senderName,
                 senderPhoto,
