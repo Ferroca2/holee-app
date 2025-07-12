@@ -130,9 +130,9 @@ async function handleConversationMessage(params: {
     // Create conversation if it doesn't exist, or update its data if it does
     if (!conversation) {
         const newConversation: Conversation = {
-            name: params.chatName || params.phone || 'UNKNOWN_USER_NAME',
-            ...(params.photo ? { photo: params.photo } : {}),
-            lastMessageTimestamp: existingMessage?.timestamp || params.momment,
+            name: params.chatName || params.senderName || params.phone || 'UNKNOWN_USER_NAME',
+            ...(params.photo ? { photo: params.photo } : params.senderPhoto ? { photo: params.senderPhoto } : {}),
+            lastMessageTimestamp: params.momment,
 
             role: 'USER',
             profileCompleted: false,
@@ -165,7 +165,74 @@ async function handleConversationMessage(params: {
         }
     }
 
-    // rest of the logic
+    // Handle message logic
+    if (params.isEdit) {
+        // Se é uma edição de mensagem
+        if (existingMessage) {
+            // Check if message payload has changed
+            const hasMessagePayloadChanged = JSON.stringify(existingMessage.messagePayload) !== JSON.stringify(params.messagePayload);
+
+            // Criar objeto de atualização apenas se houver mudanças
+            messageUpdateData = {
+                ...(hasMessagePayloadChanged ? { messagePayload: params.messagePayload } : {}),
+                ...(existingMessage.timestamp < params.momment ? { timestamp: params.momment } : {}),
+                ...(params.referenceMessageId ? { referenceMessageId: params.referenceMessageId } : {}),
+            };
+
+            // Update existing message only if there are changes
+            if (Object.keys(messageUpdateData).length > 0) {
+                dbPromises.push(MessagesRepository.updateMessage(params.phone, params.messageId, messageUpdateData));
+            }
+        } else {
+            // Se a mensagem não existe (caso raro), cria uma nova
+            newMessageData = {
+                timestamp: params.momment,
+                messagePayload: params.messagePayload,
+                ...(params.referenceMessageId ? { referenceMessageId: params.referenceMessageId } : {}),
+                isGroup: false,
+                isMe: params.fromMe,
+                sender: {
+                    phone: params.phone,
+                    ...(params.senderName ? { name: params.senderName } : params.chatName ? { name: params.chatName } : {}),
+                    ...(params.senderPhoto ? { photo: params.senderPhoto } : params.photo ? { photo: params.photo } : {}),
+                },
+            };
+
+            dbPromises.push(MessagesRepository.setMessage(params.phone, params.messageId, newMessageData));
+        }
+    } else if (existingMessage) {
+        // Handle non-edited message that exists (probably sent via API)
+        messageUpdateData = {
+            // Do not update the original timestamp
+            // Only update the necessary fields
+            sender: {
+                phone: params.phone,
+                ...(params.senderName ? { name: params.senderName } : existingMessage.sender.name ? { name: existingMessage.sender.name } : {}),
+                ...(params.senderPhoto ? { photo: params.senderPhoto } : existingMessage.sender.photo ? { photo: existingMessage.sender.photo } : {}),
+            },
+        };
+
+        // Update existing message only if there are changes
+        if (Object.keys(messageUpdateData).length > 0) {
+            dbPromises.push(MessagesRepository.updateMessage(params.phone, params.messageId, messageUpdateData));
+        }
+    } else {
+        // Handle non-edited message that doesn't exist (sent via phone or API not yet set)
+        newMessageData = {
+            timestamp: params.momment,
+            messagePayload: params.messagePayload,
+            ...(params.referenceMessageId ? { referenceMessageId: params.referenceMessageId } : {}),
+            isGroup: false,
+            isMe: params.fromMe,
+            sender: {
+                phone: params.phone,
+                ...(params.senderName ? { name: params.senderName } : params.chatName ? { name: params.chatName } : {}),
+                ...(params.senderPhoto ? { photo: params.senderPhoto } : params.photo ? { photo: params.photo } : {}),
+            },
+        };
+
+        dbPromises.push(MessagesRepository.setMessage(params.phone, params.messageId, newMessageData));
+    }
 
     // Execute all database operations in parallel
     await Promise.all(dbPromises);
