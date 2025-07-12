@@ -1,0 +1,42 @@
+{
+  "extends": "@quasar/app-vite/tsconfig-preset",
+  "compilerOptions": {
+      "baseUrl": ".",
+      "jsx": "preserve",
+      "paths": {
+          "functions/*": [
+              "../functions/*"
+          ],
+          "components/*": [
+              "src/components/*"
+          ],
+          "layouts/*": [
+              "src/layouts/*"
+          ],
+          "pages/*": [
+              "src/pages/*"
+          ],
+          "assets/*": [
+              "src/assets/*"
+          ],
+          "boot/*": [
+              "src/boot/*"
+          ],
+          "stores/*": [
+              "src/stores/*"
+          ],
+          "utils/*": [
+              "src/utils/*"
+          ],
+          "types/*": [
+              "src/types/*"
+          ],
+          "hooks/*": [
+              "src/hooks/*"
+          ],
+          "app/*": [
+              "*"
+          ],
+      }
+  }
+}
