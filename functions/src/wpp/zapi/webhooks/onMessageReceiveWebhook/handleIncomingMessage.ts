@@ -43,6 +43,7 @@ export async function handleIncomingMessage(
             return; // ignore group messages
         } else {
             // TODO: handle conversation message
+            logger.info(`Conversation message received with information: ${JSON.stringify(params, null, 2)}`);
         }
     } catch (error) {
         throw new Error(`Error handling incoming message: ${error}`);
