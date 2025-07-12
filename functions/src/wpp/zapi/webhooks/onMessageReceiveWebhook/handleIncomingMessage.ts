@@ -28,7 +28,6 @@ export async function handleIncomingMessage(
         isEdit: boolean;
         momment: number;
         messagePayload: MessagePayload;
-        waitingMessage?: boolean;
 
         fromMe: boolean;
         participantPhone: string;
@@ -57,7 +56,6 @@ export async function handleIncomingMessage(
                 isEdit: params.isEdit,
                 momment: params.momment,
                 messagePayload: params.messagePayload,
-                waitingMessage: params.waitingMessage,
 
                 fromMe: params.fromMe,
                 senderName: params.senderName,

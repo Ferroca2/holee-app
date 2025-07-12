@@ -194,7 +194,6 @@ export default async function onMessageReceive(req: Request, res: Response) {
                 isEdit,
                 momment,
                 messagePayload,
-                waitingMessage: waitingMessage === true,
 
                 fromMe,
                 participantPhone,
@@ -214,7 +213,6 @@ export default async function onMessageReceive(req: Request, res: Response) {
                 isEdit,
                 momment,
                 messagePayload,
-                waitingMessage: waitingMessage === true,
 
                 fromMe,
                 fromApi,

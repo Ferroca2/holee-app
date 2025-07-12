@@ -31,7 +31,6 @@ export async function handleOutgoingMessage(
         isEdit: boolean;
         momment: number;
         messagePayload: MessagePayload;
-        waitingMessage?: boolean;
 
         fromMe: boolean;
         fromApi: boolean;
@@ -61,7 +60,6 @@ export async function handleOutgoingMessage(
                 isEdit: params.isEdit,
                 momment: params.momment,
                 messagePayload: params.messagePayload,
-                waitingMessage: params.waitingMessage,
 
                 fromMe: params.fromMe,
                 fromApi: params.fromApi,
