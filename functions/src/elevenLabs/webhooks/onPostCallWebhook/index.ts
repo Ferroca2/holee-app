@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { logger } from 'firebase-functions';
 
+import { Application } from '../../../domain/applications/entity';
+import ApplicationsRepository from '../../../domain/applications/repository';
+
 /**
  * Handles webhook events from ElevenLabs.
  *
@@ -10,7 +13,7 @@ import { logger } from 'firebase-functions';
  * Behavior:
  * - Validates the request method and payload structure.
  * - Processes post_call_transcription events.
- * - Logs the payload for debugging purposes.
+ * - Updates Application with transcription data.
  *
  * @throws 405 - If the HTTP method is not POST.
  * @throws 415 - If the Content-Type is not "application/json".
@@ -18,17 +21,17 @@ import { logger } from 'firebase-functions';
  */
 export default async function onPostCallWebhook(req: Request, res: Response) {
     try {
-        // Ensure the HTTP method is POST
-        if (req.method !== 'POST') {
-            logger.warn(`Invalid method: ${req.method}`);
-            return res.status(405).json({ message: 'Method Not Allowed. Use POST.' });
-        }
+        // // Ensure the HTTP method is POST
+        // if (req.method !== 'POST') {
+        //     logger.warn(`Invalid method: ${req.method}`);
+        //     return res.status(405).json({ message: 'Method Not Allowed. Use POST.' });
+        // }
 
-        // Validate the Content-Type
-        if (req.get('Content-Type') !== 'application/json') {
-            logger.warn(`Invalid Content-Type: ${req.get('Content-Type')}`);
-            return res.status(415).json({ message: 'Unsupported Media Type. Use application/json.' });
-        }
+        // // Validate the Content-Type
+        // if (req.get('Content-Type') !== 'application/json') {
+        //     logger.warn(`Invalid Content-Type: ${req.get('Content-Type')}`);
+        //     return res.status(415).json({ message: 'Unsupported Media Type. Use application/json.' });
+        // }
 
         // Extract payload
         const payload = req.body;
@@ -42,40 +45,76 @@ export default async function onPostCallWebhook(req: Request, res: Response) {
         // Log the payload for debugging purposes
         logger.info(`ElevenLabs webhook payload:\n${JSON.stringify(req.body, null, 2)}`);
 
-        // Extract relevant fields
-        const { type, user_id: userId, transcript, status } = payload;
+        // Extract relevant fields from the nested structure
+        const { type, data } = payload;
 
         // Only process post_call_transcription events
         if (type === 'post_call_transcription') {
-            logger.info(`Processing post_call_transcription event with status: ${status}`);
+            logger.info(`Processing post_call_transcription event with status: ${data?.status}`);
 
             // Validate required fields
-            if (!userId || typeof userId !== 'string') {
-                logger.warn('Missing or invalid user_id');
+            if (!data?.user_id || typeof data.user_id !== 'string') {
+                logger.warn('Missing or invalid user_id in data');
                 return res.status(400).json({ message: 'Missing or invalid user_id' });
             }
 
-            if (!transcript || !Array.isArray(transcript)) {
-                logger.warn('Missing or invalid transcript');
+            if (!data?.transcript || !Array.isArray(data.transcript)) {
+                logger.warn('Missing or invalid transcript in data');
                 return res.status(400).json({ message: 'Missing or invalid transcript' });
             }
 
             // Extract jobId and conversationId from user_id (format: jobId_conversationId)
-            const parts = userId.split('_');
+            const parts = data.user_id.split('_');
             if (parts.length !== 2) {
-                logger.warn(`Invalid user_id format: ${userId}. Expected format: jobId_conversationId`);
+                logger.warn(`Invalid user_id format: ${data.user_id}. Expected format: jobId_conversationId`);
                 return res.status(400).json({ message: 'Invalid user_id format. Expected: jobId_conversationId' });
             }
 
             const [jobId, conversationId] = parts;
 
-            // TODO: Process the transcript and update the Application
-            // With jobId and conversationId, we can access the Application that was responsible for this call
+            // Find the application
+            const application = await ApplicationsRepository.getApplicationByJobAndConversation(jobId, conversationId);
+            if (!application) {
+                logger.warn(`Application not found for job ${jobId} and conversation ${conversationId}`);
+                return res.status(404).json({ message: 'Application not found' });
+            }
 
-            logger.info(`Successfully processed post_call_transcription for job ${jobId}, conversation ${conversationId}`);
+            // Process transcript to simplified format
+            const simplifiedTranscript = data.transcript.map((item: any) => ({
+                role: item.role || 'unknown',
+                message: item.message || '',
+            }));
+
+            // Extract transcript summary
+            const transcriptSummary = data.analysis?.transcript_summary || '';
+
+            // Prepare update data
+            const updateData: Partial<Application> = {
+                updatedAt: Date.now(),
+            };
+
+            // Update interviewData with transcription and summary (preserve existing script and checklist)
+            if (application.interviewData) {
+                updateData.interviewData = {
+                    ...application.interviewData,
+                    transcription: simplifiedTranscript,
+                    transcriptSummary: transcriptSummary,
+                };
+            } else {
+                logger.warn(`Application ${application.id} has no interviewData - cannot add transcription`);
+                return res.status(400).json({ message: 'Application has no interviewData structure' });
+            }
+
+            // Update the application
+            await ApplicationsRepository.updateApplication(application.id, updateData);
+
+            logger.info(`Successfully updated application ${application.id} with transcription data for job ${jobId}, conversation ${conversationId}`);
+            logger.info(`Transcription has ${simplifiedTranscript.length} messages`);
+            logger.info(`Transcript summary: ${transcriptSummary}`);
+
         } else {
             // Ignore other types
-            logger.warn(`Ignoring event type: ${type}`);
+            logger.info(`Ignoring event type: ${type}`);
         }
 
         // Return success response

@@ -14,6 +14,8 @@ export interface InterviewData {
     checklist: { text: string; tick: boolean }[]; // Checklist de itens a serem verificados (pré-entrevista)
     script: string;                               // Script da entrevista (pré-entrevista)
     notes?: string;                               // Anotações preenchidas durante/após a entrevista
+    transcription?: { role: string; message: string }[]; // Transcrição da entrevista simplificada (pós-entrevista)
+    transcriptSummary?: string;                   // Resumo da transcrição (pós-entrevista)
 }
 
 export interface Application {
