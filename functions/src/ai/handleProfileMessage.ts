@@ -14,8 +14,7 @@ import { parseResoningResponse } from "./utils";
  * @param messageContent - Conteúdo da mensagem já processado
  */
 export const handleProfileMessage = async (messagePath: MessagePath, context: ChatCompletionMessageParam[]): Promise<void> => {
-    const { conversationId, messageId } = messagePath;
-
+    const { conversationId } = messagePath;
     try {
         const conversation = await conversationsRepository.getConversationById(conversationId);
         if (!conversation) {
@@ -32,9 +31,7 @@ export const handleProfileMessage = async (messagePath: MessagePath, context: Ch
 
         const zapiService = await ZApiServiceSDK.initialize();
         await zapiService.sendMessage(conversationId, responsePayload);
-
-        logger.info(`Successfully sent profile response to conversation ${conversationId}`);
     } catch (error) {
-        logger.error(`Error processing profile message for conversation ${conversationId}:`, error);
+        logger.error(`Failed to send profile message to ${conversationId}:`, error);
     }
 }
