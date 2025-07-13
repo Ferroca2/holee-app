@@ -3,10 +3,13 @@ import { logger } from 'firebase-functions';
 
 import { validateOptInApplicationTaskData, ValidationError } from './types';
 
+import { ZApiServiceSDK } from '../../../wpp/zapi/service';
+import { MessagePayload } from '../../../core/messaging';
+
 import { ApplicationStep } from '../../../domain/applications/entity';
-import applicationsRepository from '../../../domain/applications/repository';
-import conversationsRepository from '../../../domain/conversations/repository';
-import jobsRepository from '../../../domain/jobs/repository';
+import ApplicationsRepository from '../../../domain/applications/repository';
+import ConversationsRepository from '../../../domain/conversations/repository';
+import JobsRepository from '../../../domain/jobs/repository';
 
 /**
  * Cloud Task function to opt-in to an application for a specific job and conversation
@@ -15,6 +18,7 @@ import jobsRepository from '../../../domain/jobs/repository';
  * 1. Validating the conversation and job exist
  * 2. Finding the existing application (should exist from fit matching)
  * 3. Updating the application to the next step: INTERVIEW
+ * 4. Sending confirmation messages and interview link
  *
  * @param context - Task context containing the data
  */
@@ -38,21 +42,21 @@ export default async function optInApplicationTask(context: Request): Promise<vo
         jobId = taskData.jobId;
 
         // 1. Validate that conversation exists
-        const conversation = await conversationsRepository.getConversationById(conversationId);
+        const conversation = await ConversationsRepository.getConversationById(conversationId);
         if (!conversation) {
             logger.error(`[${conversationId}] Conversation not found`);
             return;
         }
 
         // 2. Validate that job exists
-        const job = await jobsRepository.getJobById(jobId);
+        const job = await JobsRepository.getJobById(jobId);
         if (!job) {
             logger.error(`[${conversationId}] Job ${jobId} not found`);
             return;
         }
 
         // 3. Find the existing application (should exist from fit matching)
-        const existingApplication = await applicationsRepository.getApplicationByJobAndConversation(jobId, conversationId);
+        const existingApplication = await ApplicationsRepository.getApplicationByJobAndConversation(jobId, conversationId);
         if (!existingApplication) {
             logger.error(`[${conversationId}] Application not found for job ${jobId} - should exist from fit matching`);
             return;
@@ -66,12 +70,38 @@ export default async function optInApplicationTask(context: Request): Promise<vo
 
         // 5. Update application to next step: INTERVIEW
         const now = Date.now();
-        await applicationsRepository.updateApplication(existingApplication.id, {
+        await ApplicationsRepository.updateApplication(existingApplication.id, {
             currentStep: ApplicationStep.INTERVIEW,
             updatedAt: now,
         });
 
         logger.info(`[${conversationId}] Successfully updated application ${existingApplication.id} to INTERVIEW step for job ${jobId}`);
+
+        //TODO: update Application with interview parameterss
+
+        // 6. Send interview confirmation message
+        const zApiService = await ZApiServiceSDK.initialize();
+
+        // Format the job end date
+        const endDate = new Date(job.applyEnd);
+        const formattedEndDate = endDate.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+
+        // Create single message payload
+        const message: MessagePayload = {
+            type: 'text',
+            text: `🎉 Parabéns! Sua candidatura foi confirmada para *${job.title}*.\n\n📹 Realize sua entrevista: https://dionisio-crm.web.app/voice-agent-public/${jobId}/${existingApplication.id}\n\n⏰ Prazo: até ${formattedEndDate}`,
+        };
+
+        // Send message
+        await zApiService.sendMessage(conversationId, message);
+
+        logger.info(`[${conversationId}] Successfully sent interview message for job ${jobId}`);
     } catch (error) {
         // Handle validation errors differently (don't retry)
         if (error instanceof ValidationError) {
