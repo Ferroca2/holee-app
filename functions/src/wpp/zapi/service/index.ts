@@ -130,7 +130,6 @@ export class ZApiServiceSDK implements ZApiServiceI {
         }
     }
 
-
     /* ZApiServiceI methods */
 
     /**

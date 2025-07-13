@@ -44,6 +44,7 @@ export default async function onMessageWrite(
     try {
         // Get current data
         const currentIsMe = after?.get('isMe') as Message['isMe'] | undefined;
+        const currentIsOptInMessage = after?.get('isOptInMessage') as Message['isOptInMessage'] | undefined;
         const messagePath: MessagePath = {
             conversationId,
             messageId,
@@ -52,6 +53,12 @@ export default async function onMessageWrite(
         switch (changeType) {
             case 'create': {
                 if (currentIsMe === true) return;
+
+                // Skip AI processing for opt-in messages
+                if (currentIsOptInMessage === true) {
+                    logger.info(`[${conversationId}] Skipping AI processing for opt-in message: ${messageId}`);
+                    return;
+                }
 
                 const aiDataBuffer = Buffer.from(JSON.stringify(messagePath));
                 await aiChatAiTopic.publishMessage({

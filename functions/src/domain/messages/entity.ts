@@ -13,6 +13,7 @@ export interface Message {
     isGroup: boolean;                       // Indicates if the message was sent in a group.
 
     isMe: boolean;                          // Indicates if the message was sent by me.
+    isOptInMessage?: boolean;               // Indicates if the message is a job opt-in message.
     sender: {
         phone: string;                      // Sender's phone number.
         name?: string;                      // Sender's name (optional).

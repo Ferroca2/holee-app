@@ -40,6 +40,8 @@ export interface Conversation {
         fitScore: number;
     }[];
 
+    currentJobIds?: string[];           // Jobs que o usuário está atualmente inscrito/interessado
+
     employed?: boolean;
 
     profileCompleted: boolean;

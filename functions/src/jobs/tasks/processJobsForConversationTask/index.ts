@@ -4,6 +4,7 @@ import { logger } from 'firebase-functions';
 import { validateProcessJobsForConversationTaskData, ValidationError } from './types';
 
 import { ZApiServiceSDK } from '../../../wpp/zapi/service';
+import { generateJobOptinMessage } from '../../utils';
 
 import { AdminBaseRef } from '../../../domain';
 import { Conversation } from '../../../domain/conversations/entity';
@@ -109,7 +110,7 @@ export default async function processJobsForConversationTask(context: Request): 
                     buttons: [
                         {
                             type: 'REPLY' as const,
-                            label: `Quero me inscrever - ${item.store.name}`,
+                            label: generateJobOptinMessage(item.job.id),
                         },
                     ],
                 }));
