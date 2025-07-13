@@ -35,7 +35,10 @@ export interface Conversation {
     companyName?: string;
 
     /* USER-only */
-    subscribedJobIds?: string[];
+    fitResults?: {
+        jobId: string;
+        fitScore: number;
+    }[];
 
     employed?: boolean;
 

@@ -3,6 +3,9 @@ import { logger } from 'firebase-functions';
 
 import { validateProcessJobsForConversationTaskData, ValidationError } from './types';
 
+import { AdminBaseRef } from '../../../domain';
+import { Conversation } from '../../../domain/conversations/entity';
+import { Job } from '../../../domain/jobs/entity';
 import conversationRepository from '../../../domain/conversations/repository';
 import jobsRepository from '../../../domain/jobs/repository';
 
@@ -42,8 +45,16 @@ export default async function processJobsForConversationTask(context: Request): 
         // 2. Fetch the jobs for the conversation
         const jobs = await jobsRepository.getCurrentOpenJobs();
 
-        // 3. Process the jobs for the conversation
-        const processResult = await processJobsForConversation(conversationId, jobs);
+        // 3. Process the fit function for each pair of job and conversation in parallel
+        const fitResults: Conversation['fitResults'] = await Promise.all(jobs.map(async job => {
+            const fitResult = await processJobForConversation(job, conversation);
+            return fitResult;
+        }));
+
+        // 4. Update the conversation with the fit results
+        await conversationRepository.updateConversation(conversationId, {
+            fitResults,
+        });
 
         logger.info(`[${conversationId}] Successfully completed processJobsForConversationTask`);
     } catch (error) {
@@ -58,4 +69,24 @@ export default async function processJobsForConversationTask(context: Request): 
         logger.error(`Error in processJobsForConversationTask for conversation ${currentConversationId}:`, error);
         throw error; // Re-throw to trigger retry mechanism
     }
+}
+
+/**
+ * Process a single job for a conversation and return fit score
+ * @param job - The job to process
+ * @param conversation - The conversation to process against
+ * @returns Fit result with jobId and score
+ */
+async function processJobForConversation(job: AdminBaseRef<Job>, conversation: AdminBaseRef<Conversation>): Promise<{ jobId: string; fitScore: number }> {
+
+    // Mock implementation - generate random score between 0 and 100
+    const fitScore = Math.floor(Math.random() * 101); // 0 to 100
+    logger.info(`[${conversation.id}] Processed job ${job.id} with fit score ${fitScore}`);
+
+    // TODO: Implement the fit function and remove the mock implementation
+
+    return {
+        jobId: job.id,
+        fitScore,
+    };
 }
