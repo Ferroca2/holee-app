@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "holee-app"
-  }
+  },
+  "targets": {
+    "holee-app": {
+      "hosting": {
+        "dashboard": [
+          "holee-app"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

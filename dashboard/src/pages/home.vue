@@ -1,8 +1,9 @@
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { BaseRef } from '../domain';
-import { Job, JobStatus } from '../domain/jobs/entity';
+import { Job, JobStatus, WorkMode, JobType } from '../domain/jobs/entity';
 import jobRepository from '../domain/jobs/repository';
 import useError from '../hooks/useError';
 import useSuccess from '../hooks/useSuccess';
@@ -31,8 +32,8 @@ interface JobFormData {
         max: number | string;
     };
     minExperienceYears: number | string;
-    workMode: 'remote' | 'hybrid' | 'on_site';
-    jobType: 'full_time' | 'part_time' | 'contract';
+    workMode: WorkMode;
+    jobType: JobType;
     applyStart: string;
     applyEnd: string;
     status: JobStatus;
@@ -43,6 +44,7 @@ const success = useSuccess();
 const confirm = useConfirm();
 const loading = ref(false);
 const activeTab = ref('open');
+const router = useRouter();
 
 const storesStore = useStoresStore();
 const sessionStore = useSessionStore();
@@ -127,7 +129,7 @@ const creatorOptions = computed(() => {
 async function fetchOpenJobs() {
     loadingOpen.value = true;
     try {
-        const response = await jobRepository.getJobsByStatus('open', storesStore.currentStore!.id);
+        const response = await jobRepository.getJobsByStatus(JobStatus.OPEN, storesStore.currentStore!.id);
         openJobs.value = response;
     } catch (err) {
         error('Erro ao carregar vagas abertas');
@@ -140,7 +142,7 @@ async function fetchOpenJobs() {
 async function fetchClosedJobs() {
     loadingClosed.value = true;
     try {
-        const response = await jobRepository.getJobsByStatus('closed', storesStore.currentStore!.id);
+        const response = await jobRepository.getJobsByStatus(JobStatus.CLOSED, storesStore.currentStore!.id);
         closedJobs.value = response;
     } catch (err) {
         error('Erro ao carregar vagas fechadas');
@@ -181,7 +183,7 @@ async function closeJob(job: BaseRef<Job>) {
     if (!confirmed) return;
 
     try {
-        await jobRepository.updateJob(job.id, { status: 'closed' });
+        await jobRepository.updateJob(job.id, { status: JobStatus.CLOSED });
         success('Vaga fechada com sucesso');
         await refreshJobs();
     } catch (err) {
@@ -201,13 +203,17 @@ async function reopenJob(job: BaseRef<Job>) {
     if (!confirmed) return;
 
     try {
-        await jobRepository.updateJob(job.id, { status: 'open' });
+        await jobRepository.updateJob(job.id, { status: JobStatus.OPEN });
         success('Vaga reaberta com sucesso');
         await refreshJobs();
     } catch (err) {
         error('Erro ao reabrir vaga');
         console.error(err);
     }
+}
+
+function seeJobDetails(job: BaseRef<Job>) {
+    router.push(`/job/${job.id}`);
 }
 
 // Form functions
@@ -412,6 +418,7 @@ onMounted(() => {
                     :show-reopen-action="false"
                     @edit-job="openEditJobDialog"
                     @close-job="closeJob"
+                    @see-details="seeJobDetails"
                 />
             </q-tab-panel>
 
@@ -475,6 +482,7 @@ onMounted(() => {
                     :show-close-action="false"
                     :show-reopen-action="true"
                     @reopen-job="reopenJob"
+                    @see-details="seeJobDetails"
                 />
             </q-tab-panel>
         </q-tab-panels>

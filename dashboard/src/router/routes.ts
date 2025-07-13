@@ -32,6 +32,15 @@ const routes: RouteRecordRaw[] = [
     },
 
     {
+        path: '/job/:jobId',
+        component: () => import('layouts/main-layout.vue'),
+        children: [{ path: '', component: () => import('pages/job-details.vue') }],
+        meta: {
+            access: 'auth-only',
+        },
+    },
+
+    {
         path: '/voice-agent',
         component: () => import('layouts/main-layout.vue'),
         children: [{ path: '', component: () => import('pages/voice-agent.vue') }],

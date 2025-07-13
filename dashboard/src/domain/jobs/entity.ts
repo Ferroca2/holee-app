@@ -1,10 +1,23 @@
-export type WorkMode = 'remote' | 'hybrid' | 'on_site';
-export type JobType = 'full_time' | 'part_time' | 'contract';
-export type JobStatus = 'open' | 'closed';
+export enum WorkMode {
+    REMOTE = 'remote',
+    HYBRID = 'hybrid',
+    ON_SITE = 'on_site',
+}
+
+export enum JobType {
+    FULL_TIME = 'full_time',
+    PART_TIME = 'part_time',
+    CONTRACT = 'contract',
+}
+
+export enum JobStatus {
+    OPEN = 'open',
+    CLOSED = 'closed',
+}
 
 export interface Job {
     storeId: string;                          // ID da store que criou a vaga
-    creatorConversationId: string;            // ID do usuário que criou a vaga
+    creatorConversationId: string;            // ID da conversa do criador da vaga
 
     title: string;                            // Título da vaga
     description: string;                      // Descrição detalhada da vaga

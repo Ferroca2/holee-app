@@ -22,7 +22,32 @@
     }
   ],
   "hosting": {
-    "public": "public",
+    "target": "dashboard",
+    "headers": [
+        {
+            "source": "/**",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache, no-store, must-revalidate"
+                }
+            ]
+        },
+        {
+            "source": "/assets/**",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "max-age=604800"
+                }
+            ]
+        }
+    ],
+    "predeploy": [
+        "npm run lint -w dashboard",
+        "npm run build -w dashboard"
+    ],
+    "public": "dashboard/dist/spa",
     "ignore": [
       "firebase.json",
       "**/.*",

@@ -6,7 +6,8 @@
   "scripts": {
     "firebase": "firebase emulators:start --export-on-exit --import='./firebase/exports'",
     "dashboard:dev": "npm run dev -w dashboard",
-    "lint": "eslint --ext .js,.ts,.vue ./"
+    "lint": "eslint --ext .js,.ts,.vue ./",
+    "seed": "npm run seed -w functions"
   },
   "workspaces": [
     "dashboard",

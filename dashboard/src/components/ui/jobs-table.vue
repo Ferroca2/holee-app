@@ -19,6 +19,7 @@ const emit = defineEmits([
     'edit-job',
     'close-job',
     'reopen-job',
+    'see-details',
 ]);
 
 // Utility functions
@@ -441,6 +442,17 @@ function formatSalaryRange(salaryRange?: { min: number; max: number }): string {
                             <!-- Right side: Action buttons -->
                             <div class="col-auto">
                                 <div class="column q-gutter-xs">
+                                    <q-btn
+                                        flat
+                                        round
+                                        size="sm"
+                                        icon="visibility"
+                                        color="info"
+                                        @click="emit('see-details', job)"
+                                    >
+                                        <q-tooltip>Ver detalhes</q-tooltip>
+                                    </q-btn>
+
                                     <q-btn
                                         v-if="showEditAction"
                                         flat

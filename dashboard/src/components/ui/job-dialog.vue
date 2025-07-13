@@ -66,11 +66,11 @@ const jobForm = ref<JobFormData>({
         max: '',
     },
     minExperienceYears: '',
-    workMode: 'remote',
-    jobType: 'full_time',
+    workMode: WorkMode.REMOTE,
+    jobType: JobType.FULL_TIME,
     applyStart: '',
     applyEnd: '',
-    status: 'open',
+    status: JobStatus.OPEN,
 });
 
 // New skill inputs
@@ -164,11 +164,11 @@ watch(() => props.job, newJob => {
                 max: '',
             },
             minExperienceYears: '',
-            workMode: 'remote',
-            jobType: 'full_time',
+            workMode: WorkMode.REMOTE,
+            jobType: JobType.FULL_TIME,
             applyStart: '',
             applyEnd: '',
-            status: 'open',
+            status: JobStatus.OPEN,
         };
     }
 }, { immediate: true });
@@ -190,11 +190,11 @@ watch(() => props.mode, newMode => {
                 max: '',
             },
             minExperienceYears: '',
-            workMode: 'remote',
-            jobType: 'full_time',
+            workMode: WorkMode.REMOTE,
+            jobType: JobType.FULL_TIME,
             applyStart: '',
             applyEnd: '',
-            status: 'open',
+            status: JobStatus.OPEN,
         };
         newRequiredSkill.value = '';
         newNiceToHaveSkill.value = '';
