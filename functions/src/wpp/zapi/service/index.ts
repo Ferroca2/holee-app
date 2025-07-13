@@ -114,7 +114,7 @@ export class ZApiServiceSDK implements ZApiServiceI {
     * @param instanceToken - The token for the ZApiInstance.
     * @returns A fully initialized ZApiServiceSDK.
     */
-    static async initialize(instanceId: string = process.env.INSTANCE_ID!, instanceToken: string = process.env.INSTANCE_TOKEN!): Promise<ZApiServiceSDK> {
+    static async initialize(instanceId: string = process.env.ZAPI_INSTANCE_ID!, instanceToken: string = process.env.ZAPI_INSTANCE_TOKEN!): Promise<ZApiServiceSDK> {
         try {
             if (!instanceToken) {
                 throw new Error(`Token is required for instance ID: ${instanceId}`);
@@ -419,7 +419,7 @@ export class ZApiServiceSDK implements ZApiServiceI {
     }): Promise<MessageInfo> {
         try {
             // Route the payload to the appropriate method based on its type
-            switch(payload.type) {
+            switch (payload.type) {
                 case 'text':
                     // Send text message
                     return await this.sendText({
@@ -496,7 +496,7 @@ export class ZApiServiceSDK implements ZApiServiceI {
                         messageId: options?.messageId,
                     }, payload.extension);
 
-                    // TODO: Implement other message types (link, poll) here as they are supported
+                // TODO: Implement other message types (link, poll) here as they are supported
 
                 case 'carousel':
                     // Send carousel message

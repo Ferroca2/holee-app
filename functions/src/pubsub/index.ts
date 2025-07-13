@@ -9,7 +9,7 @@ import { onMessagePublished } from 'firebase-functions/v2/pubsub';
 export const onChatAi = onMessagePublished(
     {
         topic: 'chat-ai',
-        secrets: ['OPENAI_API_KEY'],
+        secrets: ['OPENAI_API_KEY', 'ZAPI_TOKEN'],
         // maxInstances: 1000,
         //minInstances: 3,
         memory: '256MiB', // 128MiB, 256MiB, 512MiB, 1GiB, 2GiB

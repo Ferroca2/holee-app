@@ -41,9 +41,13 @@ export default async function onMessageWrite(
             ? 'delete'
             : 'update';
 
+    logger.info(`Processing ${changeType} event for conversation ${conversationId}, message ${messageId}`);
+
     try {
         // Get current data
         const currentIsMe = after?.get('isMe') as Message['isMe'] | undefined;
+        logger.info(`Message isMe: ${currentIsMe}`);
+
         const messagePath: MessagePath = {
             conversationId,
             messageId,
@@ -51,22 +55,31 @@ export default async function onMessageWrite(
 
         switch (changeType) {
             case 'create': {
-                if (currentIsMe === true) return;
+                logger.info('Processing create event');
 
-                const aiDataBuffer = Buffer.from(JSON.stringify(messagePath));
+                // Verificação mais robusta - só processa se isMe for explicitamente false
+                if (currentIsMe !== false) {
+                    logger.info(`Skipping message processing - isMe: ${currentIsMe}`);
+                    return;
+                }
+
+                logger.info('Publishing message to chat-ai topic');
+
+                // Publica como JSON direto em vez de Buffer
                 await aiChatAiTopic.publishMessage({
-                    data: aiDataBuffer,
+                    json: messagePath,
                 });
 
+                logger.info('Message published successfully to chat-ai topic');
                 break;
             }
             case 'update': {
-
+                logger.info('Processing update event - not implemented yet');
                 break;
             }
 
             case 'delete': {
-
+                logger.info('Processing delete event - not implemented yet');
                 break;
             }
 
@@ -76,5 +89,6 @@ export default async function onMessageWrite(
         }
     } catch (error) {
         logger.error(`Error processing message change (conversationId: ${conversationId}, messageId: ${messageId}):`, error);
+        throw error; // Re-throw para que o Firebase Functions possa tentar novamente
     }
 }
