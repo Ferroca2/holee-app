@@ -87,10 +87,9 @@ export default async function rankApplicationsTask(context: Request): Promise<vo
         const validCandidates = [];
         const candidatesToReject = [];
         for (const candidate of candidateApplications) {
-            // Check if interview was completed (has interviewData and notes)
+            // Check if interview was completed (has interviewData)
             const hasInterviewData = candidate.interviewData !== undefined;
-            const hasNotes = candidate.interviewData?.notes !== undefined && candidate.interviewData.notes.trim() !== '';   // TODO: Check some flag instead
-            if (hasInterviewData && hasNotes) {
+            if (hasInterviewData) {
                 validCandidates.push(candidate);
                 logger.info(`[${jobId}] Candidate ${candidate.id} has completed interview`);
             } else {
@@ -115,7 +114,7 @@ export default async function rankApplicationsTask(context: Request): Promise<vo
         // TODO: Implement ranking logic with agents
         // The validCandidates array contains all applications that:
         // - Were in INTERVIEW step with IN_PROGRESS status
-        // - Have completed their interview (interviewData with notes)
+        // - Have completed their interview (interviewData)
         // - Are ready to be ranked by the AI agent system
 
         logger.info(`[${jobId}] RankApplicationsTask completed successfully. ${validCandidates.length} candidates ready for ranking`);

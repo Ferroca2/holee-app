@@ -92,7 +92,7 @@ export default async function optInApplicationTask(context: Request): Promise<vo
         await ApplicationsRepository.updateApplication(existingApplication.id, {
             interviewData: interviewData ? {
                 script: interviewData.roteiro,
-                checklist: interviewData.checklist.map(item => ({ text: item, tick: false }))
+                checklist: interviewData.checklist.map(item => ({ text: item, tick: false })),
             } : undefined,
         });
 

@@ -88,6 +88,15 @@ export default async function onPostCallWebhook(req: Request, res: Response) {
             // Extract transcript summary
             const transcriptSummary = data.analysis?.transcript_summary || '';
 
+            // Extract call duration
+            const callDurationSeconds = data.metadata?.call_duration_secs || 0;
+
+            // Extract call status
+            const callStatus = data.status || '';
+
+            // Extract main language
+            const mainLanguage = data.metadata?.main_language || '';
+
             // Prepare update data
             const updateData: Partial<Application> = {
                 updatedAt: Date.now(),
@@ -99,6 +108,9 @@ export default async function onPostCallWebhook(req: Request, res: Response) {
                     ...application.interviewData,
                     transcription: simplifiedTranscript,
                     transcriptSummary: transcriptSummary,
+                    callDurationSeconds: callDurationSeconds,
+                    callStatus: callStatus,
+                    mainLanguage: mainLanguage,
                 };
             } else {
                 logger.warn(`Application ${application.id} has no interviewData - cannot add transcription`);
@@ -110,6 +122,9 @@ export default async function onPostCallWebhook(req: Request, res: Response) {
 
             logger.info(`Successfully updated application ${application.id} with transcription data for job ${jobId}, conversation ${conversationId}`);
             logger.info(`Transcription has ${simplifiedTranscript.length} messages`);
+            logger.info(`Call duration: ${callDurationSeconds} seconds`);
+            logger.info(`Call status: ${callStatus}`);
+            logger.info(`Main language: ${mainLanguage}`);
             logger.info(`Transcript summary: ${transcriptSummary}`);
 
         } else {

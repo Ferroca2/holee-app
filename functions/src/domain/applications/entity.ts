@@ -13,9 +13,12 @@ export enum ApplicationStep {
 export interface InterviewData {
     checklist: { text: string; tick: boolean }[]; // Checklist de itens a serem verificados (pré-entrevista)
     script: string;                               // Script da entrevista (pré-entrevista)
-    notes?: string;                               // Anotações preenchidas durante/após a entrevista
+
+    callStatus?: string;                          // Status da chamada (ex: "done") (pós-entrevista)
     transcription?: { role: string; message: string }[]; // Transcrição da entrevista simplificada (pós-entrevista)
     transcriptSummary?: string;                   // Resumo da transcrição (pós-entrevista)
+    callDurationSeconds?: number;                 // Duração da chamada em segundos (pós-entrevista)
+    mainLanguage?: string;                        // Idioma principal da chamada (ex: "pt-br") (pós-entrevista)
 }
 
 export interface Application {
