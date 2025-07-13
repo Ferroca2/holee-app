@@ -42,9 +42,11 @@ export const onMessageReceiveWebhook = onRequest(
 );
 
 /* Jobs */
+
 export const processJobsForConversationTask = onTaskDispatched(
     {
         timeoutSeconds: 540,
+        secrets: ['ZAPI_TOKEN', 'OPENAI_API_KEY'],
         memory: '512MiB', // Use '256MiB', '512MiB', '1GiB', '2GiB' or '4GiB'
         cpu: 2,
         retryConfig: {
