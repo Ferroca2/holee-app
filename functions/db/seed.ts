@@ -42,28 +42,6 @@ export const clearFirestoreData = async () =>
     await clearAuthData();
     await clearFirestoreData();
 
-    // Create Admin User
-    const adminDisplayName = 'Admin User';
-    const adminEmail = 'admin@holee-app.com';
-    const adminPassword = 'admin123';
-    const adminPhone = '+5511999999999';
-
-    let adminUserRecord;
-    try {
-        adminUserRecord = await firebaseAdmin
-            .auth()
-            .createUser({
-                email: adminEmail,
-                password: adminPassword,
-                displayName: adminDisplayName,
-                phoneNumber: adminPhone,
-            });
-        console.log('Admin user created:', adminUserRecord.uid);
-    } catch (error) {
-        console.error('Error creating admin user:', error);
-        throw error;
-    }
-
     // Create HR User
     const hrDisplayName = 'HR Manager';
     const hrEmail = 'hr@techcorp.com';
@@ -121,70 +99,6 @@ export const clearFirestoreData = async () =>
             isActive: true,
             isDeleted: false,
         },
-        {
-            name: 'StartupXYZ',
-            address: {
-                city: 'Rio de Janeiro',
-                complement: 'Sala 501',
-                country: 'Brasil',
-                neighborhood: 'Ipanema',
-                number: '456',
-                state: 'RJ',
-                street: 'Rua Visconde de Pirajá',
-                zipcode: '22410-002',
-            },
-            phone: '+5521987654321',
-            email: 'jobs@startupxyz.com',
-            links: {
-                website: 'https://startupxyz.com',
-                linkedin: 'https://linkedin.com/company/startupxyz',
-            },
-            owner: {
-                name: hrDisplayName,
-                id: hrUserRecord.uid,
-            },
-            mission: 'Revolucionar a forma como as pessoas trabalham',
-            vision: 'Criar o futuro do trabalho remoto',
-            values: ['Agilidade', 'Criatividade', 'Diversidade', 'Flexibilidade'],
-            description: 'Startup focada em soluções para trabalho remoto e colaboração',
-            logo: 'https://via.placeholder.com/200x200/ff6600/ffffff?text=XYZ',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            isActive: true,
-            isDeleted: false,
-        },
-        {
-            name: 'GlobalTech Industries',
-            address: {
-                city: 'Belo Horizonte',
-                complement: 'Torre A',
-                country: 'Brasil',
-                neighborhood: 'Savassi',
-                number: '789',
-                state: 'MG',
-                street: 'Av. do Contorno',
-                zipcode: '30110-017',
-            },
-            phone: '+5531987654321',
-            email: 'careers@globaltech.com',
-            links: {
-                website: 'https://globaltech.com',
-                linkedin: 'https://linkedin.com/company/globaltech',
-            },
-            owner: {
-                name: hrDisplayName,
-                id: hrUserRecord.uid,
-            },
-            mission: 'Conectar talentos globais com oportunidades locais',
-            vision: 'Ser a ponte entre o talento brasileiro e o mundo',
-            values: ['Globalização', 'Inclusão', 'Qualidade', 'Crescimento'],
-            description: 'Empresa multinacional com foco em tecnologia e inovação',
-            logo: 'https://via.placeholder.com/200x200/009900/ffffff?text=GT',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            isActive: true,
-            isDeleted: false,
-        },
     ];
 
     const createdStores: string[] = [];
@@ -199,19 +113,9 @@ export const clearFirestoreData = async () =>
         throw new Error(`Expected ${stores.length} stores, but created ${createdStores.length}`);
     }
 
-    // Create onboarding data for admin user
-    const adminOnboardingData = {
-        'store-configuration': createdStores[0], // Associate with first store
-    };
-
-    await dbAdmin
-        .collection('onboarding')
-        .doc(adminUserRecord.uid)
-        .set(adminOnboardingData);
-
     // Create onboarding data for HR user
     const hrOnboardingData = {
-        'store-configuration': createdStores[0], // Associate with first store
+        'store-configuration': createdStores[0], // Associate with store
     };
 
     await dbAdmin
@@ -219,7 +123,7 @@ export const clearFirestoreData = async () =>
         .doc(hrUserRecord.uid)
         .set(hrOnboardingData);
 
-    console.log('Created onboarding data for admin and HR users');
+    console.log('Created onboarding data for HR user');
 
     // Create Jobs
     const currentTime = Date.now();
@@ -227,149 +131,9 @@ export const clearFirestoreData = async () =>
         // TechCorp Jobs
         {
             storeId: createdStores[0]!,
-            title: 'Desenvolvedor Full Stack Sênior',
-            description: 'Procuramos um desenvolvedor experiente para liderar nossa equipe de desenvolvimento. Você trabalhará com tecnologias modernas como React, Node.js, e AWS.',
-            location: 'São Paulo, SP',
-            numberOfPositions: 2,
-            seniorityLevel: 'Senior',
-            requiredSkills: ['JavaScript', 'React', 'Node.js', 'AWS', 'Docker'],
-            niceToHaveSkills: ['TypeScript', 'GraphQL', 'Kubernetes'],
-            languagesRequired: ['Português', 'Inglês'],
-            salaryRange: {
-                min: 12000,
-                max: 18000,
-            },
-            minExperienceYears: 5,
-            workMode: WorkMode.HYBRID,
-            jobType: JobType.FULL_TIME,
-            applyStart: currentTime,
-            applyEnd: currentTime + (30 * 24 * 60 * 60 * 1000), // 30 days from now
-            status: JobStatus.OPEN,
-            createdAt: currentTime,
-            updatedAt: currentTime,
-        },
-        {
-            storeId: createdStores[0]!,
-            title: 'Product Manager',
-            description: 'Buscamos um Product Manager para definir a estratégia e roadmap de nossos produtos digitais.',
-            location: 'São Paulo, SP',
-            numberOfPositions: 1,
-            seniorityLevel: 'Pleno',
-            requiredSkills: ['Product Management', 'Agile', 'Scrum', 'Analytics'],
-            niceToHaveSkills: ['UX Design', 'Data Analysis', 'SQL'],
-            languagesRequired: ['Português', 'Inglês'],
-            salaryRange: {
-                min: 10000,
-                max: 15000,
-            },
-            minExperienceYears: 3,
-            workMode: WorkMode.HYBRID,
-            jobType: JobType.FULL_TIME,
-            applyStart: currentTime,
-            applyEnd: currentTime + (45 * 24 * 60 * 60 * 1000), // 45 days from now
-            status: JobStatus.OPEN,
-            createdAt: currentTime,
-            updatedAt: currentTime,
-        },
-        {
-            storeId: createdStores[0]!,
-            title: 'DevOps Engineer',
-            description: 'Procuramos um especialista em DevOps para otimizar nossa infraestrutura e pipelines de CI/CD.',
-            location: 'São Paulo, SP',
-            numberOfPositions: 1,
-            seniorityLevel: 'Senior',
-            requiredSkills: ['AWS', 'Docker', 'Kubernetes', 'CI/CD', 'Linux'],
-            niceToHaveSkills: ['Terraform', 'Ansible', 'Monitoring'],
-            languagesRequired: ['Português', 'Inglês'],
-            salaryRange: {
-                min: 13000,
-                max: 20000,
-            },
-            minExperienceYears: 4,
-            workMode: WorkMode.REMOTE,
-            jobType: JobType.FULL_TIME,
-            applyStart: currentTime,
-            applyEnd: currentTime + (60 * 24 * 60 * 60 * 1000), // 60 days from now
-            status: JobStatus.OPEN,
-            createdAt: currentTime,
-            updatedAt: currentTime,
-        },
-        // StartupXYZ Jobs
-        {
-            storeId: createdStores[1]!,
-            title: 'Frontend Developer',
-            description: 'Desenvolvedor frontend para criar interfaces incríveis usando React e TypeScript.',
-            location: 'Rio de Janeiro, RJ',
-            numberOfPositions: 3,
-            seniorityLevel: 'Pleno',
-            requiredSkills: ['React', 'TypeScript', 'CSS', 'HTML'],
-            niceToHaveSkills: ['Next.js', 'Styled Components', 'Jest'],
-            languagesRequired: ['Português'],
-            salaryRange: {
-                min: 8000,
-                max: 12000,
-            },
-            minExperienceYears: 2,
-            workMode: WorkMode.REMOTE,
-            jobType: JobType.FULL_TIME,
-            applyStart: currentTime,
-            applyEnd: currentTime + (30 * 24 * 60 * 60 * 1000),
-            status: JobStatus.OPEN,
-            createdAt: currentTime,
-            updatedAt: currentTime,
-        },
-        {
-            storeId: createdStores[1]!,
-            title: 'UX/UI Designer',
-            description: 'Designer para criar experiências digitais excepcionais para nossos usuários.',
-            location: 'Rio de Janeiro, RJ',
-            numberOfPositions: 2,
-            seniorityLevel: 'Pleno',
-            requiredSkills: ['Figma', 'User Research', 'Prototyping', 'Design Systems'],
-            niceToHaveSkills: ['After Effects', 'Illustration', 'Framer'],
-            languagesRequired: ['Português'],
-            salaryRange: {
-                min: 7000,
-                max: 11000,
-            },
-            minExperienceYears: 2,
-            workMode: WorkMode.HYBRID,
-            jobType: JobType.FULL_TIME,
-            applyStart: currentTime,
-            applyEnd: currentTime + (45 * 24 * 60 * 60 * 1000),
-            status: JobStatus.OPEN,
-            createdAt: currentTime,
-            updatedAt: currentTime,
-        },
-        // GlobalTech Jobs
-        {
-            storeId: createdStores[2]!,
-            title: 'Data Scientist',
-            description: 'Cientista de dados para trabalhar com machine learning e análise de dados em escala global.',
-            location: 'Belo Horizonte, MG',
-            numberOfPositions: 1,
-            seniorityLevel: 'Senior',
-            requiredSkills: ['Python', 'Machine Learning', 'SQL', 'Statistics'],
-            niceToHaveSkills: ['TensorFlow', 'PyTorch', 'Spark', 'MLOps'],
-            languagesRequired: ['Português', 'Inglês'],
-            salaryRange: {
-                min: 15000,
-                max: 25000,
-            },
-            minExperienceYears: 4,
-            workMode: WorkMode.REMOTE,
-            jobType: JobType.FULL_TIME,
-            applyStart: currentTime,
-            applyEnd: currentTime + (60 * 24 * 60 * 60 * 1000),
-            status: JobStatus.OPEN,
-            createdAt: currentTime,
-            updatedAt: currentTime,
-        },
-        {
-            storeId: createdStores[2]!,
             title: 'Backend Developer Java',
             description: 'Desenvolvedor backend Java para sistemas distribuídos de alta performance.',
-            location: 'Belo Horizonte, MG',
+            location: 'São Paulo, SP',
             numberOfPositions: 2,
             seniorityLevel: 'Pleno',
             requiredSkills: ['Java', 'Spring Boot', 'SQL', 'REST APIs'],
@@ -388,30 +152,6 @@ export const clearFirestoreData = async () =>
             createdAt: currentTime,
             updatedAt: currentTime,
         },
-        // Closed job for testing
-        {
-            storeId: createdStores[0]!,
-            title: 'Mobile Developer (FECHADA)',
-            description: 'Desenvolvedor mobile para apps iOS e Android (vaga já preenchida).',
-            location: 'São Paulo, SP',
-            numberOfPositions: 1,
-            seniorityLevel: 'Pleno',
-            requiredSkills: ['React Native', 'iOS', 'Android'],
-            niceToHaveSkills: ['Flutter', 'Swift', 'Kotlin'],
-            languagesRequired: ['Português'],
-            salaryRange: {
-                min: 8000,
-                max: 12000,
-            },
-            minExperienceYears: 2,
-            workMode: WorkMode.HYBRID,
-            jobType: JobType.FULL_TIME,
-            applyStart: currentTime - (60 * 24 * 60 * 60 * 1000), // 60 days ago
-            applyEnd: currentTime - (30 * 24 * 60 * 60 * 1000), // 30 days ago
-            status: JobStatus.CLOSED,
-            createdAt: currentTime - (60 * 24 * 60 * 60 * 1000),
-            updatedAt: currentTime - (30 * 24 * 60 * 60 * 1000),
-        },
     ];
 
     const createdJobs: string[] = [];
@@ -426,8 +166,80 @@ export const clearFirestoreData = async () =>
         throw new Error(`Expected ${jobs.length} jobs, but created ${createdJobs.length}`);
     }
 
-    // Create sample candidate users
+    // Create sample candidate users for Java job funnel
     const candidateUsers = [
+        {
+            displayName: 'Rafael Almeida',
+            email: 'rafael.almeida@email.com',
+            password: 'candidate123',
+            phone: '+5511666666666',
+        },
+        {
+            displayName: 'Thiago Nascimento',
+            email: 'thiago.nascimento@email.com',
+            password: 'candidate123',
+            phone: '+5511000000001',
+        },
+        {
+            displayName: 'Fernanda Lima',
+            email: 'fernanda.lima@email.com',
+            password: 'candidate123',
+            phone: '+5511000000002',
+        },
+        {
+            displayName: 'Gustavo Martins',
+            email: 'gustavo.martins@email.com',
+            password: 'candidate123',
+            phone: '+5511000000003',
+        },
+        {
+            displayName: 'Juliana Souza',
+            email: 'juliana.souza@email.com',
+            password: 'candidate123',
+            phone: '+5511000000004',
+        },
+        {
+            displayName: 'Leonardo Castro',
+            email: 'leonardo.castro@email.com',
+            password: 'candidate123',
+            phone: '+5511000000007',
+        },
+        {
+            displayName: 'Pedro Ferreira',
+            email: 'pedro.ferreira@email.com',
+            password: 'candidate123',
+            phone: '+5511555555555',
+        },
+        {
+            displayName: 'Luciana Pereira',
+            email: 'luciana.pereira@email.com',
+            password: 'candidate123',
+            phone: '+5511777777777',
+        },
+        {
+            displayName: 'Rodrigo Barbosa',
+            email: 'rodrigo.barbosa@email.com',
+            password: 'candidate123',
+            phone: '+5511000000005',
+        },
+        {
+            displayName: 'Vanessa Gomes',
+            email: 'vanessa.gomes@email.com',
+            password: 'candidate123',
+            phone: '+5511000000006',
+        },
+        {
+            displayName: 'Bruno Cardoso',
+            email: 'bruno.cardoso@email.com',
+            password: 'candidate123',
+            phone: '+5511000000008',
+        },
+        {
+            displayName: 'Camila Rodrigues',
+            email: 'camila.rodrigues@email.com',
+            password: 'candidate123',
+            phone: '+5511999999990',
+        },
         {
             displayName: 'João Silva',
             email: 'joao.silva@email.com',
@@ -451,12 +263,6 @@ export const clearFirestoreData = async () =>
             email: 'ana.costa@email.com',
             password: 'candidate123',
             phone: '+5511444444444',
-        },
-        {
-            displayName: 'Pedro Ferreira',
-            email: 'pedro.ferreira@email.com',
-            password: 'candidate123',
-            phone: '+5511555555555',
         },
     ];
 
@@ -494,117 +300,7 @@ export const clearFirestoreData = async () =>
 
     // Create Conversations
     const conversations: Conversation[] = [
-        {
-            name: 'João Silva',
-            photo: 'https://via.placeholder.com/150x150/4285f4/ffffff?text=JS',
-            lastMessageTimestamp: currentTime - (2 * 60 * 60 * 1000), // 2 hours ago
-            role: 'USER',
-            subscribedJobIds: [createdJobs[0]!, createdJobs[1]!],
-            employed: false,
-            profileCompleted: true,
-            relevantData: {
-                fullName: 'João Silva',
-                birthDate: '1990-05-15',
-                region: 'São Paulo – SP',
-                expectedSalary: 15000,
-                interests: ['JavaScript', 'React', 'Node.js', 'AWS'],
-                linkedin: {
-                    url: 'https://linkedin.com/in/joao-silva',
-                },
-                resume: {
-                    url: 'https://example.com/resume-joao.pdf',
-                },
-            },
-        },
-        {
-            name: 'Maria Santos',
-            photo: 'https://via.placeholder.com/150x150/ea4335/ffffff?text=MS',
-            lastMessageTimestamp: currentTime - (1 * 60 * 60 * 1000), // 1 hour ago
-            role: 'USER',
-            subscribedJobIds: [createdJobs[3]!, createdJobs[4]!],
-            employed: false,
-            profileCompleted: true,
-            relevantData: {
-                fullName: 'Maria Santos',
-                birthDate: '1992-08-20',
-                region: 'Rio de Janeiro – RJ',
-                expectedSalary: 10000,
-                interests: ['UX Design', 'Figma', 'User Research', 'Prototyping'],
-                linkedin: {
-                    url: 'https://linkedin.com/in/maria-santos',
-                },
-                resume: {
-                    url: 'https://example.com/resume-maria.pdf',
-                },
-            },
-        },
-        {
-            name: 'Carlos Oliveira',
-            photo: 'https://via.placeholder.com/150x150/34a853/ffffff?text=CO',
-            lastMessageTimestamp: currentTime - (30 * 60 * 1000), // 30 minutes ago
-            role: 'USER',
-            subscribedJobIds: [createdJobs[2]!, createdJobs[5]!],
-            employed: true,
-            profileCompleted: true,
-            relevantData: {
-                fullName: 'Carlos Oliveira',
-                birthDate: '1988-03-10',
-                region: 'Belo Horizonte – MG',
-                expectedSalary: 18000,
-                interests: ['DevOps', 'AWS', 'Docker', 'Kubernetes'],
-                linkedin: {
-                    url: 'https://linkedin.com/in/carlos-oliveira',
-                },
-                resume: {
-                    url: 'https://example.com/resume-carlos.pdf',
-                },
-            },
-        },
-        {
-            name: 'Ana Costa',
-            photo: 'https://via.placeholder.com/150x150/fbbc05/ffffff?text=AC',
-            lastMessageTimestamp: currentTime - (4 * 60 * 60 * 1000), // 4 hours ago
-            role: 'USER',
-            subscribedJobIds: [createdJobs[6]!],
-            employed: false,
-            profileCompleted: false,
-            relevantData: {
-                fullName: 'Ana Costa',
-                birthDate: '1995-11-25',
-                region: 'Belo Horizonte – MG',
-                expectedSalary: 12000,
-                interests: ['Python', 'Machine Learning', 'Data Science'],
-                linkedin: {
-                    url: 'https://linkedin.com/in/ana-costa',
-                },
-                resume: {
-                    url: 'https://example.com/resume-ana.pdf',
-                },
-            },
-        },
-        {
-            name: 'Pedro Ferreira',
-            photo: 'https://via.placeholder.com/150x150/9c27b0/ffffff?text=PF',
-            lastMessageTimestamp: currentTime - (6 * 60 * 60 * 1000), // 6 hours ago
-            role: 'USER',
-            subscribedJobIds: [createdJobs[7]!],
-            employed: false,
-            profileCompleted: true,
-            relevantData: {
-                fullName: 'Pedro Ferreira',
-                birthDate: '1991-07-12',
-                region: 'Belo Horizonte – MG',
-                expectedSalary: 11000,
-                interests: ['Java', 'Spring Boot', 'Microservices', 'SQL'],
-                linkedin: {
-                    url: 'https://linkedin.com/in/pedro-ferreira',
-                },
-                resume: {
-                    url: 'https://example.com/resume-pedro.pdf',
-                },
-            },
-        },
-        // HR Admin conversation
+        // HR Manager conversation
         {
             name: 'HR Manager',
             photo: 'https://via.placeholder.com/150x150/ff5722/ffffff?text=HR',
@@ -613,6 +309,263 @@ export const clearFirestoreData = async () =>
             companyName: 'TechCorp Solutions',
             employed: true,
             profileCompleted: true,
+        },
+        // Java job candidates - funnel effect
+        {
+            name: 'Rafael Almeida',
+            photo: 'https://via.placeholder.com/150x150/3f51b5/ffffff?text=RA',
+            lastMessageTimestamp: currentTime - (7 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Rafael Almeida',
+                address: 'São Paulo – SP',
+                expectedSalary: 10000,
+                interests: 'Java, Spring Boot, REST APIs, MySQL',
+                linkedin: 'https://linkedin.com/in/rafael-almeida',
+            },
+        },
+        {
+            name: 'Thiago Nascimento',
+            photo: 'https://via.placeholder.com/150x150/ff9800/ffffff?text=TN',
+            lastMessageTimestamp: currentTime - (11 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Thiago Nascimento',
+                address: 'São Paulo – SP',
+                expectedSalary: 9500,
+                interests: 'Java, Hibernate, JPA, MySQL',
+                linkedin: 'https://linkedin.com/in/thiago-nascimento',
+            },
+        },
+        {
+            name: 'Fernanda Lima',
+            photo: 'https://via.placeholder.com/150x150/8bc34a/ffffff?text=FL',
+            lastMessageTimestamp: currentTime - (13 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Fernanda Lima',
+                address: 'São Paulo – SP',
+                expectedSalary: 11000,
+                interests: 'Java, Spring Boot, Unit Testing, Agile',
+                linkedin: 'https://linkedin.com/in/fernanda-lima',
+            },
+        },
+        {
+            name: 'Gustavo Martins',
+            photo: 'https://via.placeholder.com/150x150/009688/ffffff?text=GM',
+            lastMessageTimestamp: currentTime - (14 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Gustavo Martins',
+                address: 'São Paulo – SP',
+                expectedSalary: 10500,
+                interests: 'Java, Spring Data, REST APIs, MongoDB',
+                linkedin: 'https://linkedin.com/in/gustavo-martins',
+            },
+        },
+        {
+            name: 'Juliana Souza',
+            photo: 'https://via.placeholder.com/150x150/ff5722/ffffff?text=JS',
+            lastMessageTimestamp: currentTime - (15 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Juliana Souza',
+                address: 'São Paulo – SP',
+                expectedSalary: 12000,
+                interests: 'Java, Spring MVC, Tomcat, Oracle',
+                linkedin: 'https://linkedin.com/in/juliana-souza',
+            },
+        },
+        {
+            name: 'Leonardo Castro',
+            photo: 'https://via.placeholder.com/150x150/795548/ffffff?text=LC',
+            lastMessageTimestamp: currentTime - (18 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Leonardo Castro',
+                address: 'São Paulo – SP',
+                expectedSalary: 9000,
+                interests: 'Java, Spring Boot, JUnit, Git',
+                linkedin: 'https://linkedin.com/in/leonardo-castro',
+            },
+        },
+        {
+            name: 'Pedro Ferreira',
+            photo: 'https://via.placeholder.com/150x150/9c27b0/ffffff?text=PF',
+            lastMessageTimestamp: currentTime - (6 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Pedro Ferreira',
+                address: 'São Paulo – SP',
+                expectedSalary: 11000,
+                interests: 'Java, Spring Boot, Microservices, SQL',
+                linkedin: 'https://linkedin.com/in/pedro-ferreira',
+            },
+        },
+        {
+            name: 'Luciana Pereira',
+            photo: 'https://via.placeholder.com/150x150/e91e63/ffffff?text=LP',
+            lastMessageTimestamp: currentTime - (8 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Luciana Pereira',
+                address: 'São Paulo – SP',
+                expectedSalary: 11500,
+                interests: 'Java, Spring Framework, Microservices, PostgreSQL',
+                linkedin: 'https://linkedin.com/in/luciana-pereira',
+            },
+        },
+        {
+            name: 'Rodrigo Barbosa',
+            photo: 'https://via.placeholder.com/150x150/673ab7/ffffff?text=RB',
+            lastMessageTimestamp: currentTime - (16 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Rodrigo Barbosa',
+                address: 'São Paulo – SP',
+                expectedSalary: 13500,
+                interests: 'Java, Spring WebFlux, Reactive Programming, Kafka',
+                linkedin: 'https://linkedin.com/in/rodrigo-barbosa',
+            },
+        },
+        {
+            name: 'Vanessa Gomes',
+            photo: 'https://via.placeholder.com/150x150/e91e63/ffffff?text=VG',
+            lastMessageTimestamp: currentTime - (17 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Vanessa Gomes',
+                address: 'São Paulo – SP',
+                expectedSalary: 14000,
+                interests: 'Java, Spring Cloud, Microservices, Redis',
+                linkedin: 'https://linkedin.com/in/vanessa-gomes',
+            },
+        },
+        {
+            name: 'Bruno Cardoso',
+            photo: 'https://via.placeholder.com/150x150/795548/ffffff?text=BC',
+            lastMessageTimestamp: currentTime - (9 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Bruno Cardoso',
+                address: 'São Paulo – SP',
+                expectedSalary: 12500,
+                interests: 'Java, Spring Boot, Docker, Jenkins',
+                linkedin: 'https://linkedin.com/in/bruno-cardoso',
+            },
+        },
+        {
+            name: 'Camila Rodrigues',
+            photo: 'https://via.placeholder.com/150x150/607d8b/ffffff?text=CR',
+            lastMessageTimestamp: currentTime - (10 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Camila Rodrigues',
+                address: 'São Paulo – SP',
+                expectedSalary: 13000,
+                interests: 'Java, Spring Security, Maven, Git',
+                linkedin: 'https://linkedin.com/in/camila-rodrigues',
+            },
+        },
+        {
+            name: 'João Silva',
+            photo: 'https://via.placeholder.com/150x150/4285f4/ffffff?text=JS',
+            lastMessageTimestamp: currentTime - (2 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'João Silva',
+                address: 'São Paulo – SP',
+                expectedSalary: 15000,
+                interests: 'Java, Spring Boot, Microservices, AWS',
+                linkedin: 'https://linkedin.com/in/joao-silva',
+            },
+        },
+        {
+            name: 'Maria Santos',
+            photo: 'https://via.placeholder.com/150x150/ea4335/ffffff?text=MS',
+            lastMessageTimestamp: currentTime - (1 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Maria Santos',
+                address: 'São Paulo – SP',
+                expectedSalary: 10000,
+                interests: 'Java, Spring Boot, REST APIs, MySQL',
+                linkedin: 'https://linkedin.com/in/maria-santos',
+            },
+        },
+        {
+            name: 'Carlos Oliveira',
+            photo: 'https://via.placeholder.com/150x150/34a853/ffffff?text=CO',
+            lastMessageTimestamp: currentTime - (30 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: true,
+            profileCompleted: true,
+            relevantData: {
+                name: 'Carlos Oliveira',
+                address: 'São Paulo – SP',
+                expectedSalary: 18000,
+                interests: 'Java, Spring Boot, Microservices, Docker',
+                linkedin: 'https://linkedin.com/in/carlos-oliveira',
+            },
+        },
+        {
+            name: 'Ana Costa',
+            photo: 'https://via.placeholder.com/150x150/fbbc05/ffffff?text=AC',
+            lastMessageTimestamp: currentTime - (4 * 60 * 60 * 1000),
+            role: 'USER',
+            currentJobIds: [createdJobs[0]!], // Java job
+            employed: false,
+            profileCompleted: false,
+            relevantData: {
+                name: 'Ana Costa',
+                address: 'São Paulo – SP',
+                expectedSalary: 12000,
+                interests: 'Java, Spring Boot, REST APIs, PostgreSQL',
+                linkedin: 'https://linkedin.com/in/ana-costa',
+            },
         },
     ];
 
@@ -631,75 +584,139 @@ export const clearFirestoreData = async () =>
 
     // Create Applications
     const applications: Application[] = [
-        // João Silva applications
+        // Java job applications - FUNNEL EFFECT (Backend Developer Java)
+        // MATCH_WITH_JOB (6 applications - early stage)
         {
-            jobId: createdJobs[0]!, // Full Stack Senior
-            conversationId: createdConversations[0]!,
-            status: ApplicationStatus.IN_PROGRESS,
-            currentStep: ApplicationStep.INTERVIEW,
-            createdAt: currentTime - (3 * 24 * 60 * 60 * 1000), // 3 days ago
-            updatedAt: currentTime - (1 * 24 * 60 * 60 * 1000), // 1 day ago
-        },
-        {
-            jobId: createdJobs[1]!, // Product Manager
-            conversationId: createdConversations[0]!,
-            status: ApplicationStatus.IN_PROGRESS,
-            currentStep: ApplicationStep.ACCEPT_JOB,
-            createdAt: currentTime - (2 * 24 * 60 * 60 * 1000), // 2 days ago
-            updatedAt: currentTime - (2 * 24 * 60 * 60 * 1000),
-        },
-        // Maria Santos applications
-        {
-            jobId: createdJobs[3]!, // Frontend Developer
-            conversationId: createdConversations[1]!,
-            status: ApplicationStatus.IN_PROGRESS,
-            currentStep: ApplicationStep.RANKING,
-            createdAt: currentTime - (4 * 24 * 60 * 60 * 1000), // 4 days ago
-            updatedAt: currentTime - (1 * 24 * 60 * 60 * 1000),
-        },
-        {
-            jobId: createdJobs[4]!, // UX/UI Designer
-            conversationId: createdConversations[1]!,
-            status: ApplicationStatus.IN_PROGRESS,
-            currentStep: ApplicationStep.FINALIST,
-            createdAt: currentTime - (5 * 24 * 60 * 60 * 1000), // 5 days ago
-            updatedAt: currentTime - (12 * 60 * 60 * 1000), // 12 hours ago
-        },
-        // Carlos Oliveira applications
-        {
-            jobId: createdJobs[2]!, // DevOps Engineer
-            conversationId: createdConversations[2]!,
-            status: ApplicationStatus.IN_PROGRESS,
-            currentStep: ApplicationStep.INTERVIEW,
-            createdAt: currentTime - (1 * 24 * 60 * 60 * 1000), // 1 day ago
-            updatedAt: currentTime - (6 * 60 * 60 * 1000), // 6 hours ago
-        },
-        // Ana Costa applications
-        {
-            jobId: createdJobs[5]!, // Data Scientist
-            conversationId: createdConversations[3]!,
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[1]!, // Rafael Almeida
             status: ApplicationStatus.IN_PROGRESS,
             currentStep: ApplicationStep.MATCH_WITH_JOB,
-            createdAt: currentTime - (12 * 60 * 60 * 1000), // 12 hours ago
-            updatedAt: currentTime - (12 * 60 * 60 * 1000),
+            createdAt: currentTime - (7 * 60 * 60 * 1000),
+            updatedAt: currentTime - (7 * 60 * 60 * 1000),
         },
-        // Pedro Ferreira applications
         {
-            jobId: createdJobs[6]!, // Backend Developer Java
-            conversationId: createdConversations[4]!,
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[2]!, // Thiago Nascimento
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.MATCH_WITH_JOB,
+            createdAt: currentTime - (11 * 60 * 60 * 1000),
+            updatedAt: currentTime - (11 * 60 * 60 * 1000),
+        },
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[3]!, // Fernanda Lima
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.MATCH_WITH_JOB,
+            createdAt: currentTime - (13 * 60 * 60 * 1000),
+            updatedAt: currentTime - (13 * 60 * 60 * 1000),
+        },
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[4]!, // Gustavo Martins
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.MATCH_WITH_JOB,
+            createdAt: currentTime - (14 * 60 * 60 * 1000),
+            updatedAt: currentTime - (14 * 60 * 60 * 1000),
+        },
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[5]!, // Juliana Souza
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.MATCH_WITH_JOB,
+            createdAt: currentTime - (15 * 60 * 60 * 1000),
+            updatedAt: currentTime - (15 * 60 * 60 * 1000),
+        },
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[6]!, // Leonardo Castro
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.MATCH_WITH_JOB,
+            createdAt: currentTime - (18 * 60 * 60 * 1000),
+            updatedAt: currentTime - (18 * 60 * 60 * 1000),
+        },
+        // ACCEPT_JOB (4 applications)
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[7]!, // Pedro Ferreira
             status: ApplicationStatus.IN_PROGRESS,
             currentStep: ApplicationStep.ACCEPT_JOB,
-            createdAt: currentTime - (8 * 60 * 60 * 1000), // 8 hours ago
+            createdAt: currentTime - (8 * 60 * 60 * 1000),
             updatedAt: currentTime - (8 * 60 * 60 * 1000),
         },
-        // Rejected application example
         {
-            jobId: createdJobs[7]!, // Mobile Developer (closed)
-            conversationId: createdConversations[0]!,
-            status: ApplicationStatus.REJECTED,
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[8]!, // Luciana Pereira
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.ACCEPT_JOB,
+            createdAt: currentTime - (8 * 60 * 60 * 1000),
+            updatedAt: currentTime - (8 * 60 * 60 * 1000),
+        },
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[9]!, // Rodrigo Barbosa
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.ACCEPT_JOB,
+            createdAt: currentTime - (16 * 60 * 60 * 1000),
+            updatedAt: currentTime - (16 * 60 * 60 * 1000),
+        },
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[10]!, // Vanessa Gomes
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.ACCEPT_JOB,
+            createdAt: currentTime - (17 * 60 * 60 * 1000),
+            updatedAt: currentTime - (17 * 60 * 60 * 1000),
+        },
+        // INTERVIEW (3 applications)
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[11]!, // Bruno Cardoso
+            status: ApplicationStatus.IN_PROGRESS,
             currentStep: ApplicationStep.INTERVIEW,
-            createdAt: currentTime - (45 * 24 * 60 * 60 * 1000), // 45 days ago
-            updatedAt: currentTime - (35 * 24 * 60 * 60 * 1000), // 35 days ago
+            createdAt: currentTime - (9 * 60 * 60 * 1000),
+            updatedAt: currentTime - (6 * 60 * 60 * 1000),
+        },
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[12]!, // Camila Rodrigues
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.INTERVIEW,
+            createdAt: currentTime - (10 * 60 * 60 * 1000),
+            updatedAt: currentTime - (5 * 60 * 60 * 1000),
+        },
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[13]!, // João Silva (additional candidate)
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.INTERVIEW,
+            createdAt: currentTime - (12 * 60 * 60 * 1000),
+            updatedAt: currentTime - (4 * 60 * 60 * 1000),
+        },
+        // RANKING (2 applications)
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[14]!, // Maria Santos (additional candidate)
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.RANKING,
+            createdAt: currentTime - (20 * 60 * 60 * 1000),
+            updatedAt: currentTime - (3 * 60 * 60 * 1000),
+        },
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[15]!, // Carlos Oliveira (additional candidate)
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.RANKING,
+            createdAt: currentTime - (24 * 60 * 60 * 1000),
+            updatedAt: currentTime - (2 * 60 * 60 * 1000),
+        },
+        // FINALIST (1 application)
+        {
+            jobId: createdJobs[0]!, // Backend Developer Java
+            conversationId: createdConversations[16]!, // Ana Costa (additional candidate)
+            status: ApplicationStatus.IN_PROGRESS,
+            currentStep: ApplicationStep.FINALIST,
+            createdAt: currentTime - (30 * 60 * 60 * 1000),
+            updatedAt: currentTime - (1 * 60 * 60 * 1000),
         },
     ];
 
@@ -708,279 +725,26 @@ export const clearFirestoreData = async () =>
         console.log(`Created application for job ${application.jobId} (ID: ${applicationRef.id})`);
     }
 
-    // Create sample Messages for conversations
-    const messageTemplates = [
-        // João Silva messages
-        {
-            conversationId: createdConversations[0]!,
-            messages: [
-                {
-                    timestamp: currentTime - (3 * 24 * 60 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Olá! Vi a vaga de Desenvolvedor Full Stack Sênior e gostaria de me candidatar.',
-                    },
-                    isGroup: false,
-                    isMe: false,
-                    sender: {
-                        phone: '+5511111111111',
-                        name: 'João Silva',
-                        photo: 'https://via.placeholder.com/150x150/4285f4/ffffff?text=JS',
-                    },
-                },
-                {
-                    timestamp: currentTime - (3 * 24 * 60 * 60 * 1000) + (5 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Ótimo! Vou analisar seu perfil e entrar em contato em breve. Você pode me enviar seu currículo?',
-                    },
-                    isGroup: false,
-                    isMe: true,
-                    sender: {
-                        phone: '+5511999999999',
-                        name: 'HoleeBot',
-                    },
-                },
-                {
-                    timestamp: currentTime - (3 * 24 * 60 * 60 * 1000) + (10 * 60 * 1000),
-                    messagePayload: {
-                        type: 'document',
-                        document: 'https://example.com/resume-joao.pdf',
-                        text: 'Aqui está meu currículo atualizado.',
-                    },
-                    isGroup: false,
-                    isMe: false,
-                    sender: {
-                        phone: '+5511111111111',
-                        name: 'João Silva',
-                    },
-                },
-                {
-                    timestamp: currentTime - (1 * 24 * 60 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Parabéns! Você passou para a etapa de entrevista. Agendar para amanhã às 14h?',
-                    },
-                    isGroup: false,
-                    isMe: true,
-                    sender: {
-                        phone: '+5511999999999',
-                        name: 'HoleeBot',
-                    },
-                },
-                {
-                    timestamp: currentTime - (1 * 24 * 60 * 60 * 1000) + (30 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Perfeito! Confirmo o horário das 14h. Obrigado!',
-                    },
-                    isGroup: false,
-                    isMe: false,
-                    sender: {
-                        phone: '+5511111111111',
-                        name: 'João Silva',
-                    },
-                },
-            ],
-        },
-        // Maria Santos messages
-        {
-            conversationId: createdConversations[1]!,
-            messages: [
-                {
-                    timestamp: currentTime - (4 * 24 * 60 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Oi! Tenho interesse na vaga de UX/UI Designer. Posso saber mais detalhes?',
-                    },
-                    isGroup: false,
-                    isMe: false,
-                    sender: {
-                        phone: '+5511222222222',
-                        name: 'Maria Santos',
-                        photo: 'https://via.placeholder.com/150x150/ea4335/ffffff?text=MS',
-                    },
-                },
-                {
-                    timestamp: currentTime - (4 * 24 * 60 * 60 * 1000) + (15 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Claro! A vaga é para trabalhar no design de nossa plataforma principal. Precisa de experiência com Figma e pesquisa de usuário.',
-                    },
-                    isGroup: false,
-                    isMe: true,
-                    sender: {
-                        phone: '+5511999999999',
-                        name: 'HoleeBot',
-                    },
-                },
-                {
-                    timestamp: currentTime - (1 * 60 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Excelente notícia! Você está entre os finalistas. Próxima etapa será uma apresentação de case.',
-                    },
-                    isGroup: false,
-                    isMe: true,
-                    sender: {
-                        phone: '+5511999999999',
-                        name: 'HoleeBot',
-                    },
-                },
-            ],
-        },
-        // Carlos Oliveira messages
-        {
-            conversationId: createdConversations[2]!,
-            messages: [
-                {
-                    timestamp: currentTime - (1 * 24 * 60 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Olá! Sou especialista em DevOps e vi que vocês têm uma vaga aberta. Posso me candidatar?',
-                    },
-                    isGroup: false,
-                    isMe: false,
-                    sender: {
-                        phone: '+5511333333333',
-                        name: 'Carlos Oliveira',
-                        photo: 'https://via.placeholder.com/150x150/34a853/ffffff?text=CO',
-                    },
-                },
-                {
-                    timestamp: currentTime - (6 * 60 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Ótimo perfil! Agendar entrevista técnica para quinta-feira às 10h?',
-                    },
-                    isGroup: false,
-                    isMe: true,
-                    sender: {
-                        phone: '+5511999999999',
-                        name: 'HoleeBot',
-                    },
-                },
-            ],
-        },
-        // Ana Costa messages
-        {
-            conversationId: createdConversations[3]!,
-            messages: [
-                {
-                    timestamp: currentTime - (12 * 60 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Oi! Sou cientista de dados e gostaria de me candidatar para a vaga na GlobalTech.',
-                    },
-                    isGroup: false,
-                    isMe: false,
-                    sender: {
-                        phone: '+5511444444444',
-                        name: 'Ana Costa',
-                        photo: 'https://via.placeholder.com/150x150/fbbc05/ffffff?text=AC',
-                    },
-                },
-                {
-                    timestamp: currentTime - (12 * 60 * 60 * 1000) + (10 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Perfeito! Para começar, preciso que você complete seu perfil. Pode me enviar suas informações de LinkedIn?',
-                    },
-                    isGroup: false,
-                    isMe: true,
-                    sender: {
-                        phone: '+5511999999999',
-                        name: 'HoleeBot',
-                    },
-                },
-            ],
-        },
-        // Pedro Ferreira messages
-        {
-            conversationId: createdConversations[4]!,
-            messages: [
-                {
-                    timestamp: currentTime - (8 * 60 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Olá! Sou desenvolvedor Java e tenho interesse na vaga de Backend Developer.',
-                    },
-                    isGroup: false,
-                    isMe: false,
-                    sender: {
-                        phone: '+5511555555555',
-                        name: 'Pedro Ferreira',
-                        photo: 'https://via.placeholder.com/150x150/9c27b0/ffffff?text=PF',
-                    },
-                },
-                {
-                    timestamp: currentTime - (8 * 60 * 60 * 1000) + (5 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Ótimo! Vi que você tem experiência com Spring Boot. Gostaria de aceitar a vaga e partir para o próximo passo?',
-                    },
-                    isGroup: false,
-                    isMe: true,
-                    sender: {
-                        phone: '+5511999999999',
-                        name: 'HoleeBot',
-                    },
-                },
-            ],
-        },
-        // HR Admin messages
-        {
-            conversationId: createdConversations[5]!,
-            messages: [
-                {
-                    timestamp: currentTime - (12 * 60 * 60 * 1000),
-                    messagePayload: {
-                        type: 'text',
-                        text: 'Dashboard administrativo funcionando perfeitamente. Relatórios de candidatos disponíveis.',
-                    },
-                    isGroup: false,
-                    isMe: false,
-                    sender: {
-                        phone: '+5511888888888',
-                        name: 'HR Manager',
-                        photo: 'https://via.placeholder.com/150x150/ff5722/ffffff?text=HR',
-                    },
-                },
-            ],
-        },
-    ];
-
-    // Create messages for each conversation
-    for (const template of messageTemplates) {
-        const conversationRef = dbAdmin.collection('conversations').doc(template.conversationId);
-
-        for (const message of template.messages) {
-            await conversationRef.collection('messages').add(message);
-        }
-
-        console.log(`Created ${template.messages.length} messages for conversation ${template.conversationId}`);
-    }
+    console.log('Skipping message creation for simplified seed');
 
     console.log('✅ Database seeding completed successfully!');
     console.log('\n📊 Summary:');
-    console.log(`- Created ${stores.length} stores`);
-    console.log(`- Created ${jobs.length} jobs`);
+    console.log(`- Created ${stores.length} store (TechCorp Solutions)`);
+    console.log(`- Created ${jobs.length} job (Backend Developer Java)`);
     console.log(`- Created ${candidateUsers.length} candidate users`);
     console.log(`- Created ${conversations.length} conversations`);
-    console.log(`- Created ${applications.length} applications`);
-    console.log(`- Created messages for ${messageTemplates.length} conversations`);
+    console.log(`- Created 16 applications with Java job funnel effect`);
     console.log('\n🚀 The job platform is ready for testing!');
 
     // Log some useful information
     console.log('\n🔑 Test Credentials:');
-    console.log('Admin: admin@holee-app.com / admin123');
-    console.log('HR: hr@techcorp.com / hr123');
-    console.log('Candidates: joao.silva@email.com / candidate123 (and others)');
+    console.log('HR: hr@techcorp.com / hr123456');
+    console.log('Candidates: rafael.almeida@email.com / candidate123 (and others)');
 
     console.log('\n📱 Test Data:');
-    console.log('- Open jobs with different statuses');
-    console.log('- Applications in various stages');
-    console.log('- Rich conversation history');
-    console.log('- Candidate profiles with different completion levels');
+    console.log('- Single company: TechCorp Solutions');
+    console.log('- Single job: Backend Developer Java');
+    console.log('- Java job funnel: 6 → 4 → 3 → 2 → 1 (applications per step)');
+    console.log('- Candidates with Java-related skills and profiles');
 
 })();
