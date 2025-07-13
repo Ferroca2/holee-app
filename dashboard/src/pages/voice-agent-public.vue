@@ -1,30 +1,27 @@
-<!-- eslint-disable camelcase -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { Conversation } from '@elevenlabs/client';
 import {
     mdiMicrophone,
     mdiMicrophoneOff,
     mdiAccountVoice,
     mdiPhoneHangup,
-    mdiMagnify,
-    mdiAccount,
-    mdiBriefcase,
 } from '@quasar/extras/mdi-v6';
 import { useQuasar } from 'quasar';
 import useError from '../hooks/useError';
-import { useStoresStore } from '../stores/stores';
 import baseButton from 'components/ui/base-button.vue';
-import baseSelect from 'components/ui/base-select.vue';
 import JobRepository from '../domain/jobs/repository';
 import ConversationRepository from '../domain/conversations/repository';
+import StoreRepository from '../domain/stores/repository';
 import { BaseRef } from '../domain';
 import { Job } from '../domain/jobs/entity';
 import { Conversation as ConversationEntity } from '../domain/conversations/entity';
+import { Store } from '../domain/stores/entity';
 
 const $q = useQuasar();
+const route = useRoute();
 const error = useError();
-const storesStore = useStoresStore();
 
 // State management
 const isConnected = ref(false);
@@ -32,15 +29,16 @@ const isConnecting = ref(false);
 const agentMode = ref<'listening' | 'speaking'>('listening');
 const conversation = ref<any>(null);
 
-// Data selection
-const selectedJob = ref<BaseRef<Job> | null>(null);
-const selectedCandidate = ref<BaseRef<ConversationEntity> | null>(null);
-const selectedJobId = ref<string>('');
-const selectedCandidateId = ref<string>('');
-const jobs = ref<BaseRef<Job>[]>([]);
-const candidates = ref<BaseRef<ConversationEntity>[]>([]);
-const loadingJobs = ref(false);
-const loadingCandidates = ref(false);
+// Data from route
+const jobId = computed(() => route.params.jobId as string);
+const candidateId = computed(() => route.params.candidateId as string);
+
+// Loaded data
+const job = ref<BaseRef<Job> | null>(null);
+const candidate = ref<BaseRef<ConversationEntity> | null>(null);
+const store = ref<BaseRef<Store> | null>(null);
+const loading = ref(false);
+const loadingError = ref<string | null>(null);
 
 // Audio visualization
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -57,52 +55,65 @@ const connectionStatus = ref<'disconnected' | 'connecting' | 'connected'>('disco
 
 // Computed properties for form validation
 const canStartInterview = computed(() => {
-    console.log('Selected job:', selectedJob.value);
-    console.log('Selected candidate:', selectedCandidate.value);
-    console.log('Is connecting:', isConnecting.value);
-    console.log('Is connected:', isConnected.value);
-
-    return selectedJob.value && selectedCandidate.value && !isConnecting.value && !isConnected.value;
+    return job.value && candidate.value && store.value && !isConnecting.value && !isConnected.value && !loading.value;
 });
 
-// Load jobs and candidates
-const loadJobs = async () => {
-    if (!storesStore.currentStore) return;
-
-    try {
-        loadingJobs.value = true;
-        jobs.value = await JobRepository.getAllJobs(storesStore.currentStore.id);
-    } catch (err) {
-        console.error('Error loading jobs:', err);
-        error('Erro ao carregar vagas');
-    } finally {
-        loadingJobs.value = false;
+// Load job, candidate, and store data
+const loadData = async () => {
+    if (!jobId.value || !candidateId.value) {
+        loadingError.value = 'IDs de vaga e candidato são obrigatórios';
+        return;
     }
-};
 
-const loadCandidates = async () => {
     try {
-        loadingCandidates.value = true;
-        // Get candidates with USER role and completed profiles
-        const allCandidates = await ConversationRepository.getConversationsByRole('USER');
-        candidates.value = allCandidates.filter(candidate => candidate.profileCompleted);
+        loading.value = true;
+        loadingError.value = null;
+
+        // Load job and candidate in parallel
+        const [jobData, candidateData] = await Promise.all([
+            JobRepository.getJob(jobId.value),
+            ConversationRepository.getConversation(candidateId.value),
+        ]);
+
+        if (!jobData) {
+            loadingError.value = 'Vaga não encontrada';
+            return;
+        }
+
+        if (!candidateData) {
+            loadingError.value = 'Candidato não encontrado';
+            return;
+        }
+
+        job.value = jobData;
+        candidate.value = candidateData;
+
+        // Load store data
+        const storeData = await StoreRepository.getStore(jobData.storeId);
+        if (!storeData) {
+            loadingError.value = 'Empresa não encontrada';
+            return;
+        }
+
+        store.value = storeData;
+
     } catch (err) {
-        console.error('Error loading candidates:', err);
-        error('Erro ao carregar candidatos');
+        console.error('Error loading data:', err);
+        loadingError.value = 'Erro ao carregar dados da entrevista';
     } finally {
-        loadingCandidates.value = false;
+        loading.value = false;
     }
 };
 
 // Build dynamic variables for the agent
 const buildDynamicVariables = () => {
-    if (!selectedJob.value || !selectedCandidate.value || !storesStore.currentStore) {
+    if (!job.value || !candidate.value || !store.value) {
         return {};
     }
 
-    const job = selectedJob.value;
-    const candidate = selectedCandidate.value;
-    const store = storesStore.currentStore;
+    const jobData = job.value;
+    const candidateData = candidate.value;
+    const storeData = store.value;
 
     // Helper function to create conditional variables
     const createConditional = (condition: boolean, value = '') => {
@@ -112,50 +123,50 @@ const buildDynamicVariables = () => {
     const variables = {
         // Required variables
         agentName: 'Assistente de Recrutamento',
-        jobTitle: job.title || '',
+        jobTitle: jobData.title || '',
 
         // Job information
-        companyName: store.name || 'Empresa',
-        title: job.title || '',
-        seniorityLevel: job.seniorityLevel || '',
-        location: job.location || '',
-        workMode: job.workMode || '',
-        jobType: job.jobType || '',
-        numberOfPositions: job.numberOfPositions?.toString() || '1',
-        minExperienceYears: job.minExperienceYears?.toString() || '0',
-        description: job.description || '',
-        requiredSkills: Array.isArray(job.requiredSkills) ? job.requiredSkills.join(', ') : job.requiredSkills || '',
-        niceToHaveSkills: Array.isArray(job.niceToHaveSkills) ? job.niceToHaveSkills.join(', ') : job.niceToHaveSkills || '',
-        languagesRequired: Array.isArray(job.languagesRequired) ? job.languagesRequired.join(', ') : job.languagesRequired || '',
+        companyName: storeData.name || 'Empresa',
+        title: jobData.title || '',
+        seniorityLevel: jobData.seniorityLevel || '',
+        location: jobData.location || '',
+        workMode: jobData.workMode || '',
+        jobType: jobData.jobType || '',
+        numberOfPositions: jobData.numberOfPositions?.toString() || '1',
+        minExperienceYears: jobData.minExperienceYears?.toString() || '0',
+        description: jobData.description || '',
+        requiredSkills: Array.isArray(jobData.requiredSkills) ? jobData.requiredSkills.join(', ') : jobData.requiredSkills || '',
+        niceToHaveSkills: Array.isArray(jobData.niceToHaveSkills) ? jobData.niceToHaveSkills.join(', ') : jobData.niceToHaveSkills || '',
+        languagesRequired: Array.isArray(jobData.languagesRequired) ? jobData.languagesRequired.join(', ') : jobData.languagesRequired || '',
 
         // Salary information
-        salaryRangemin: job.salaryRange?.min?.toString() || '',
-        salaryRangemax: job.salaryRange?.max?.toString() || '',
+        salaryRangemin: jobData.salaryRange?.min?.toString() || '',
+        salaryRangemax: jobData.salaryRange?.max?.toString() || '',
 
         // Candidate information
-        candidateFullName: candidate.relevantData?.fullName || candidate.name || '',
-        candidateRegion: candidate.relevantData?.region || '',
-        candidateExpectedSalary: candidate.relevantData?.expectedSalary?.toString() || '',
-        candidateEmploymentStatus: candidate.employed ? 'Empregado' : 'Desempregado',
-        candidateInterests: Array.isArray(candidate.relevantData?.interests) ? candidate.relevantData.interests.join(', ') : '',
-        candidateLinkedIn: candidate.relevantData?.linkedin?.url || '',
-        candidateResumeUrl: candidate.relevantData?.resume?.url || '',
+        candidateFullName: candidateData.relevantData?.fullName || candidateData.name || '',
+        candidateRegion: candidateData.relevantData?.region || '',
+        candidateExpectedSalary: candidateData.relevantData?.expectedSalary?.toString() || '',
+        candidateEmploymentStatus: candidateData.employed ? 'Empregado' : 'Desempregado',
+        candidateInterests: Array.isArray(candidateData.relevantData?.interests) ? candidateData.relevantData.interests.join(', ') : '',
+        candidateLinkedIn: candidateData.relevantData?.linkedin?.url || '',
+        candidateResumeUrl: candidateData.relevantData?.resume?.url || '',
 
         // Conditional variables (if_xxx)
-        if_salaryRange: createConditional(Boolean(job.salaryRange?.min && job.salaryRange?.max)),
-        if_candidateFullName: createConditional(Boolean(candidate.relevantData?.fullName || candidate.name)),
-        if_niceToHaveSkills: createConditional(Boolean(job.niceToHaveSkills && job.niceToHaveSkills.length > 0)),
-        if_languagesRequired: createConditional(Boolean(job.languagesRequired && job.languagesRequired.length > 0)),
-        if_candidateInterests: createConditional(Boolean(candidate.relevantData?.interests && candidate.relevantData.interests.length > 0)),
-        if_candidateRegion: createConditional(Boolean(candidate.relevantData?.region)),
-        if_location: createConditional(Boolean(job.location)),
-        if_workMode: createConditional(Boolean(job.workMode)),
-        if_minExperienceYears: createConditional(Boolean(job.minExperienceYears && job.minExperienceYears > 0)),
-        if_candidateResumeUrl: createConditional(Boolean(candidate.relevantData?.resume?.url)),
-        if_candidateEmployed: createConditional(Boolean(candidate.employed)),
-        if_candidateExpectedSalary: createConditional(Boolean(candidate.relevantData?.expectedSalary)),
-        if_numberOfPositions: createConditional(Boolean(job.numberOfPositions && job.numberOfPositions > 1)),
-        if_seniorityLevel: createConditional(Boolean(job.seniorityLevel)),
+        ifSalaryRange: createConditional(Boolean(jobData.salaryRange?.min && jobData.salaryRange?.max)),
+        ifCandidateFullName: createConditional(Boolean(candidateData.relevantData?.fullName || candidateData.name)),
+        ifNiceToHaveSkills: createConditional(Boolean(jobData.niceToHaveSkills && jobData.niceToHaveSkills.length > 0)),
+        ifLanguagesRequired: createConditional(Boolean(jobData.languagesRequired && jobData.languagesRequired.length > 0)),
+        ifCandidateInterests: createConditional(Boolean(candidateData.relevantData?.interests && candidateData.relevantData.interests.length > 0)),
+        ifCandidateRegion: createConditional(Boolean(candidateData.relevantData?.region)),
+        ifLocation: createConditional(Boolean(jobData.location)),
+        ifWorkMode: createConditional(Boolean(jobData.workMode)),
+        ifMinExperienceYears: createConditional(Boolean(jobData.minExperienceYears && jobData.minExperienceYears > 0)),
+        ifCandidateResumeUrl: createConditional(Boolean(candidateData.relevantData?.resume?.url)),
+        ifCandidateEmployed: createConditional(Boolean(candidateData.employed)),
+        ifCandidateExpectedSalary: createConditional(Boolean(candidateData.relevantData?.expectedSalary)),
+        ifNumberOfPositions: createConditional(Boolean(jobData.numberOfPositions && jobData.numberOfPositions > 1)),
+        ifSeniorityLevel: createConditional(Boolean(jobData.seniorityLevel)),
     };
 
     return variables;
@@ -432,9 +443,8 @@ onMounted(() => {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Load initial data
-    loadJobs();
-    loadCandidates();
+    // Load data when component mounts
+    loadData();
 });
 
 onUnmounted(() => {
@@ -477,36 +487,6 @@ const getAgentModeText = () => {
 const getAgentModeColor = () => {
     return agentMode.value === 'speaking' ? 'primary' : 'positive';
 };
-
-// Computed properties for select options
-const jobOptions = computed(() => {
-    return jobs.value.map(job => ({
-        label: `${job.title} - ${storesStore.currentStore?.name || 'Empresa'}`,
-        value: job.id,
-        job: job,
-    }));
-});
-
-const candidateOptions = computed(() => {
-    return candidates.value.map(candidate => ({
-        label: candidate.relevantData?.fullName || candidate.name || 'Candidato',
-        value: candidate.id,
-        candidate: candidate,
-    }));
-});
-
-// Handlers for select changes
-const onJobChange = (jobId: string) => {
-    selectedJobId.value = jobId;
-    const job = jobs.value.find(j => j.id === jobId);
-    selectedJob.value = job || null;
-};
-
-const onCandidateChange = (candidateId: string) => {
-    selectedCandidateId.value = candidateId;
-    const candidate = candidates.value.find(c => c.id === candidateId);
-    selectedCandidate.value = candidate || null;
-};
 </script>
 
 <template>
@@ -515,179 +495,185 @@ const onCandidateChange = (candidateId: string) => {
             class="column items-center q-gutter-lg"
             style="max-width: 800px; width: 100%;"
         >
-            <!-- Header -->
-            <div class="text-center">
-                <div class="text-h4 text-weight-bold q-mb-md q-mt-md">
-                    <q-icon
-                        :name="mdiAccountVoice"
-                        size="md"
-                        class="q-mr-sm"
-                    />
-                    Entrevista com IA
-                </div>
-                <div class="text-body1 text-grey-7">
-                    Evolua seu processo de recrutamento com a IA
-                </div>
-            </div>
-
-            <!-- Selection Cards -->
-            <div class="row q-gutter-md full-width">
-                <div class="col-12 col-md-6">
-                    <q-card class="full-height">
-                        <q-card-section>
-                            <div class="text-h6 q-mb-md">
-                                <q-icon
-                                    :name="mdiBriefcase"
-                                    class="q-mr-sm"
-                                />
-                                Selecionar Vaga
-                            </div>
-                            <base-select
-                                v-model="selectedJobId"
-                                emit-value
-                                map-options
-                                option-label="label"
-                                option-value="value"
-                                :options="jobOptions"
-                                label="Escolha a vaga"
-                                placeholder="Selecione uma vaga"
-                                :loading="loadingJobs"
-                                @update:model-value="onJobChange"
-                            />
-                            <div
-                                v-if="selectedJob"
-                                class="text-caption text-grey-6 q-mt-sm"
-                            >
-                                {{ selectedJob.title }} - {{ selectedJob.seniorityLevel }}
-                            </div>
-                        </q-card-section>
-                    </q-card>
-                </div>
-                <div class="col-12 col-md-6">
-                    <q-card class="full-height">
-                        <q-card-section>
-                            <div class="text-h6 q-mb-md">
-                                <q-icon
-                                    :name="mdiAccount"
-                                    class="q-mr-sm"
-                                />
-                                Selecionar Candidato
-                            </div>
-                            <base-select
-                                v-model="selectedCandidateId"
-                                emit-value
-                                map-options
-                                option-label="label"
-                                option-value="value"
-                                :options="candidateOptions"
-                                label="Escolha o candidato"
-                                placeholder="Selecione um candidato"
-                                :loading="loadingCandidates"
-                                @update:model-value="onCandidateChange"
-                            />
-                            <div
-                                v-if="selectedCandidate"
-                                class="text-caption text-grey-6 q-mt-sm"
-                            >
-                                {{ selectedCandidate.relevantData?.fullName || selectedCandidate.name }} - {{ selectedCandidate.relevantData?.region }}
-                            </div>
-                        </q-card-section>
-                    </q-card>
-                </div>
-            </div>
-
-            <!-- Audio Visualization -->
-            <div class="audio-visualization-container">
-                <canvas
-                    ref="canvasRef"
-                    class="audio-canvas"
-                />
-            </div>
-
-            <!-- Controls -->
-            <div class="row q-gutter-md">
-                <base-button
-                    v-if="!isConnected"
-                    :loading="isConnecting"
-                    :disable="!canStartInterview"
-                    color="accent"
-                    :icon="mdiMicrophone"
-                    label="Iniciar Entrevista"
-                    @click="startConversation"
-                />
-                <base-button
-                    v-if="isConnected"
-                    color="negative"
-                    :icon="mdiPhoneHangup"
-                    label="Parar Entrevista"
-                    size="lg"
-                    @click="stopConversation"
-                />
-            </div>
-
-            <!-- Status Information -->
+            <!-- Loading State -->
             <div
-                v-if="isConnected"
-                class="row q-gutter-md full-width"
+                v-if="loading"
+                class="text-center"
             >
-                <div class="col">
-                    <q-card class="text-center">
-                        <q-card-section>
-                            <div class="text-caption text-grey-6">
-                                Status da Conexão
-                            </div>
-                            <div class="text-h6 q-mt-xs">
-                                <q-badge
-                                    :color="getStatusColor()"
-                                    :label="getStatusText()"
-                                />
-                            </div>
-                        </q-card-section>
-                    </q-card>
-                </div>
-                <div class="col">
-                    <q-card class="text-center">
-                        <q-card-section>
-                            <div class="text-caption text-grey-6">
-                                Agente está
-                            </div>
-                            <div class="text-h6 q-mt-xs">
-                                <q-badge
-                                    :color="getAgentModeColor()"
-                                    :label="getAgentModeText()"
-                                />
-                            </div>
-                        </q-card-section>
-                    </q-card>
+                <q-spinner
+                    color="primary"
+                    size="3em"
+                />
+                <div class="text-h6 q-mt-md">
+                    Carregando dados da entrevista...
                 </div>
             </div>
 
-            <!-- Instructions -->
-            <q-card
-                class="full-width"
-                flat
-                bordered
+            <!-- Error State -->
+            <div
+                v-else-if="loadingError"
+                class="text-center"
             >
-                <q-card-section>
-                    <div class="text-h6 q-mb-md">
+                <q-icon
+                    name="error"
+                    color="negative"
+                    size="3em"
+                />
+                <div class="text-h6 q-mt-md text-negative">
+                    {{ loadingError }}
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <template v-else-if="job && candidate && store">
+                <!-- Header -->
+                <div class="text-center">
+                    <div class="text-h4 text-weight-bold q-mb-md q-mt-md">
                         <q-icon
-                            name="info"
+                            :name="mdiAccountVoice"
+                            size="md"
                             class="q-mr-sm"
                         />
-                        Como usar
+                        Entrevista com IA
                     </div>
-                    <div class="text-body2">
-                        <ol class="q-pl-md">
-                            <li>Selecione a vaga que será entrevistada</li>
-                            <li>Escolha o candidato para a entrevista</li>
-                            <li>Clique em "Iniciar Entrevista" para começar</li>
-                            <li>Permita o acesso ao microfone quando solicitado</li>
-                            <li>Participe da entrevista normalmente</li>
-                            <li>Clique em "Parar Entrevista" quando terminar</li>
-                        </ol>
+                    <div class="text-body1 text-grey-7">
+                        {{ store.name }}
                     </div>
-                </q-card-section>
-            </q-card>
+                </div>
+
+                <!-- Interview Information -->
+                <div class="row q-gutter-md full-width">
+                    <div class="col-12 col-md-6">
+                        <q-card>
+                            <q-card-section>
+                                <div class="text-h6 q-mb-md">
+                                    <q-icon
+                                        name="work"
+                                        class="q-mr-sm"
+                                    />
+                                    Vaga
+                                </div>
+                                <div class="text-subtitle1">
+                                    {{ job.title }}
+                                </div>
+                                <div class="text-caption text-grey-6">
+                                    {{ job.seniorityLevel }} • {{ job.location }}
+                                </div>
+                            </q-card-section>
+                        </q-card>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <q-card>
+                            <q-card-section>
+                                <div class="text-h6 q-mb-md">
+                                    <q-icon
+                                        name="person"
+                                        class="q-mr-sm"
+                                    />
+                                    Candidato
+                                </div>
+                                <div class="text-subtitle1">
+                                    {{ candidate.relevantData?.fullName || candidate.name }}
+                                </div>
+                                <div class="text-caption text-grey-6">
+                                    {{ candidate.relevantData?.region }}
+                                </div>
+                            </q-card-section>
+                        </q-card>
+                    </div>
+                </div>
+
+                <!-- Audio Visualization -->
+                <div class="audio-visualization-container">
+                    <canvas
+                        ref="canvasRef"
+                        class="audio-canvas"
+                    />
+                </div>
+
+                <!-- Controls -->
+                <div class="row q-gutter-md">
+                    <base-button
+                        v-if="!isConnected"
+                        :loading="isConnecting"
+                        :disable="!canStartInterview"
+                        color="accent"
+                        :icon="mdiMicrophone"
+                        label="Iniciar Entrevista"
+                        @click="startConversation"
+                    />
+                    <base-button
+                        v-if="isConnected"
+                        color="negative"
+                        :icon="mdiPhoneHangup"
+                        label="Parar Entrevista"
+                        size="lg"
+                        @click="stopConversation"
+                    />
+                </div>
+
+                <!-- Status Information -->
+                <div
+                    v-if="isConnected"
+                    class="row q-gutter-md full-width"
+                >
+                    <div class="col">
+                        <q-card class="text-center">
+                            <q-card-section>
+                                <div class="text-caption text-grey-6">
+                                    Status da Conexão
+                                </div>
+                                <div class="text-h6 q-mt-xs">
+                                    <q-badge
+                                        :color="getStatusColor()"
+                                        :label="getStatusText()"
+                                    />
+                                </div>
+                            </q-card-section>
+                        </q-card>
+                    </div>
+                    <div class="col">
+                        <q-card class="text-center">
+                            <q-card-section>
+                                <div class="text-caption text-grey-6">
+                                    Agente está
+                                </div>
+                                <div class="text-h6 q-mt-xs">
+                                    <q-badge
+                                        :color="getAgentModeColor()"
+                                        :label="getAgentModeText()"
+                                    />
+                                </div>
+                            </q-card-section>
+                        </q-card>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <q-card
+                    class="full-width"
+                    flat
+                    bordered
+                >
+                    <q-card-section>
+                        <div class="text-h6 q-mb-md">
+                            <q-icon
+                                name="info"
+                                class="q-mr-sm"
+                            />
+                            Como usar
+                        </div>
+                        <div class="text-body2">
+                            <ol class="q-pl-md">
+                                <li>Clique em "Iniciar Entrevista" para começar</li>
+                                <li>Permita o acesso ao microfone quando solicitado</li>
+                                <li>Participe da entrevista normalmente</li>
+                                <li>Clique em "Parar Entrevista" quando terminar</li>
+                            </ol>
+                        </div>
+                    </q-card-section>
+                </q-card>
+            </template>
         </div>
     </q-page>
 </template>
