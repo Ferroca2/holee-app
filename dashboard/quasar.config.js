@@ -54,14 +54,13 @@ module.exports = configure(function (ctx) {
         boot: [
             'firebase',
             ...ctx.dev ? ['firebase/emulators'] : [],
-            'axios',
             'router-guards',
+            'axios',
         ],
 
         // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
         css: [
             'app.scss',
-            'transitions.scss',
         ],
 
         // https://github.com/quasarframework/quasar/tree/dev/extras
@@ -129,7 +128,7 @@ module.exports = configure(function (ctx) {
             port: 8080,
             open: true,
             proxy: {
-                '/api': `${HOSTNAME}:5007`,
+                '/api': `${HOSTNAME}:5001`,
             },
         },
 

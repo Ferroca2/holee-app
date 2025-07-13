@@ -18,6 +18,8 @@ node_modules/
 .env.*
 
 .env
+lib/
+node_modules/
 
 # Logs
 logs/

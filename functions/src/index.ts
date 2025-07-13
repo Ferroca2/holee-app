@@ -43,7 +43,6 @@ export const onMessageReceiveWebhook = onRequest(
 
 /* AI Service */
 
-
 export * as firestore from './firestore';
 
 export * as pubsub from './pubsub';
