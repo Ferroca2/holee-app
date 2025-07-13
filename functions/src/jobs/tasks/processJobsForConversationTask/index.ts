@@ -117,10 +117,10 @@ export default async function processJobsForConversationTask(context: Request): 
                     ],
                 }));
 
-                await zApiService.sendCarousel({
-                    phone: conversation.id,
-                    message: `🎯 Encontramos ${validJobsWithStores.length} nova${validJobsWithStores.length > 1 ? 's' : ''} vaga${validJobsWithStores.length > 1 ? 's' : ''} que combina${validJobsWithStores.length > 1 ? 'm' : ''} com você:`,
-                    carousel,
+                await zApiService.sendMessage(conversation.id, {
+                    type: 'carousel',
+                    text: `🎯 Encontramos ${validJobsWithStores.length} nova${validJobsWithStores.length > 1 ? 's' : ''} vaga${validJobsWithStores.length > 1 ? 's' : ''} que combina${validJobsWithStores.length > 1 ? 'm' : ''} com você:`,
+                    cards: carousel,
                 });
 
                 logger.info(`[${conversationId}] Sent carousel with ${validJobsWithStores.length} new job matches`);
