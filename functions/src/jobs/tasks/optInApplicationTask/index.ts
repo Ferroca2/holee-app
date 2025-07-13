@@ -10,6 +10,8 @@ import { ApplicationStep, ApplicationStatus } from '../../../domain/applications
 import ApplicationsRepository from '../../../domain/applications/repository';
 import ConversationsRepository from '../../../domain/conversations/repository';
 import JobsRepository from '../../../domain/jobs/repository';
+import { ReadMapAgent } from '../../../ai/readMapAgent';
+import { getUserDescription } from '../../../ai/utils';
 
 /**
  * Cloud Task function to opt-in to an application for a specific job and conversation
@@ -83,9 +85,18 @@ export default async function optInApplicationTask(context: Request): Promise<vo
 
         logger.info(`[${conversationId}] Successfully updated application ${existingApplication.id} to INTERVIEW step for job ${jobId}`);
 
-        //TODO: update Application with interview data
+        // 7. Update Application with interview data
+        const readMapAgent = new ReadMapAgent(conversationId);
+        const userDescription = await getUserDescription(conversationId);
+        const interviewData = await readMapAgent.process(job.description, userDescription);
+        await ApplicationsRepository.updateApplication(existingApplication.id, {
+            interviewData: interviewData ? {
+                script: interviewData.roteiro,
+                checklist: interviewData.checklist.map(item => ({ text: item, tick: false }))
+            } : undefined,
+        });
 
-        // 7. Send interview confirmation message
+        // 8. Send interview confirmation message
         const zApiService = await ZApiServiceSDK.initialize();
 
         // Format the job end date

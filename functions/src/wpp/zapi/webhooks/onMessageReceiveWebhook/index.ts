@@ -630,43 +630,12 @@ function extractMessagePayload(
                         input.hydratedTemplate.footer
                     );
                 }
-                // TODO: Add image payload and video payload with button actions
-                // else if (hydratedTemplate.header?.image) {
-                //     return {
-                //         type: 'image',
-                //         image: hydratedTemplate.header.image.imageUrl,
-                //         ...(hydratedTemplate.header.image.caption ? { text: hydratedTemplate.header.image.caption } : {}),
-                //     } as ImageButtonActionsPayload;
-                // } else if (hydratedTemplate.header?.video) {
-                //     return {
-                //         type: 'video',
-                //         video: hydratedTemplate.header.video.videoUrl,
-                //         ...(hydratedTemplate.header.video.caption ? { text: hydratedTemplate.header.video.caption } : {}),
-                //     } as VideoButtonActionsPayload;
-                // } else {
-                //     return null;
-                // }
             } else if (input.hydratedTemplate.header?.image) {
                 return Messaging.create.image(
                     input.hydratedTemplate.header.image.imageUrl,
                     input.hydratedTemplate.header.image.caption
                 );
             }
-            // TODO: Add video payload
-            // else if (hydratedTemplate.header?.video) {
-            //     return {
-            //         type: 'video',
-            //         video: hydratedTemplate.header.video.videoUrl,
-            //         ...(hydratedTemplate.header.video.caption ? { text: hydratedTemplate.header.video.caption } : {}),
-            //     } as VideoPayload;
-            // } else if (hydratedTemplate.header?.document) {
-            // TODO: Add document payload/
-            // } else if (hydratedTemplate.header?.location) {
-            //     return {
-            //         type: 'location',
-            //         location: hydratedTemplate.header.location,
-            //     } as LocationPayload;
-            // }
             else {
                 return null;
             }

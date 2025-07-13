@@ -46,9 +46,6 @@ export default async function onJobWrite(
         switch (changeType) {
             case 'create': {
                 logger.info(`[${jobId}] Job created with status: ${currentJobStatus}`);
-
-                // TODO: Handle job creation logic
-
                 break;
             }
 
@@ -76,9 +73,6 @@ export default async function onJobWrite(
 
             case 'delete': {
                 logger.info(`[${jobId}] Job deleted - previous status was: ${previousJobStatus}`);
-
-                // TODO: Handle job deletion logic
-
                 break;
             }
 
