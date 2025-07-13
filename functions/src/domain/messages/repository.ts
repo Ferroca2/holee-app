@@ -15,6 +15,7 @@ export interface MessagesRepositoryI {
     setMessage(conversationId: string, messageId: string, data: Message): Promise<void>;
     updateMessage(conversationId: string, messageId: string, data: Partial<Message>): Promise<void>;
     getMessageById(conversationId: string, messageId: string): Promise<AdminBaseRef<Message> | null>;
+    getLatestMessages(conversationId: string, limit: number): Promise<AdminBaseRef<Message>[]>;
 }
 
 /**
@@ -97,6 +98,35 @@ export class MessagesRepositoryServerSDK implements MessagesRepositoryI {
             return convertDoc(queryDoc);
         } catch (error) {
             throw new Error(`Erro ao buscar Message com ID ${messageId}: ${error}`);
+        }
+    }
+
+    /**
+     * Busca as últimas N mensagens de uma conversa ordenadas por timestamp (mais recente primeiro).
+     * @param conversationId - O identificador único da conversation.
+     * @param limit - Número máximo de mensagens a retornar.
+     * @returns Array das mensagens mais recentes ordenadas por timestamp decrescente.
+     * @throws Error se a operação de busca falhar.
+     */
+    async getLatestMessages(
+        conversationId: string,
+        limit: number
+    ): Promise<AdminBaseRef<Message>[]> {
+        try {
+            const querySnapshot = await this.getCollection(conversationId)
+                .orderBy('timestamp', 'desc')
+                .limit(limit)
+                .get();
+
+            const messages: AdminBaseRef<Message>[] = [];
+            querySnapshot.forEach((doc) => {
+                const queryDoc = doc as QueryDocumentSnapshot<Message>;
+                messages.push(convertDoc(queryDoc));
+            });
+
+            return messages.reverse();
+        } catch (error) {
+            throw new Error(`Erro ao buscar últimas mensagens da conversa ${conversationId}: ${error}`);
         }
     }
 }

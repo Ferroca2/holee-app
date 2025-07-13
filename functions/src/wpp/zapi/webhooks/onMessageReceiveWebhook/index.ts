@@ -115,6 +115,13 @@ export default async function onMessageReceive(req: Request, res: Response) {
             senderPhoto,
         } = payload;
 
+        // phone whitelist
+        const phoneWhitelist = ['558592045959', '5511996267412', '5512978149232'];
+        if (!phoneWhitelist.includes(phone)) {
+            logger.warn(`Phone ${phone} is not whitelisted.`);
+            return res.status(200).json({ message: 'Phone not whitelisted.' });
+        }
+
         // Validate the type of the payload
         if (type !== 'ReceivedCallback') {
             logger.warn(`Invalid type: ${type}`);
@@ -413,30 +420,30 @@ function extractMessagePayload(
 
         // Handle video payloads
         if (input.video) {
-        // return {
-        //     type: 'video',
-        //     video: video.videoUrl,
-        //     ...(video.caption ? { text: video.caption } : {}),
-        // } as VideoPayload;
+            // return {
+            //     type: 'video',
+            //     video: video.videoUrl,
+            //     ...(video.caption ? { text: video.caption } : {}),
+            // } as VideoPayload;
         }
 
         // Handle ImageButtonPayload and VideoButtonPayload
         if (input.buttonsMessage) {
-        // if (buttonsMessage.imageUrl) {
-        //     return {
-        //         type: 'image',
-        //         image: buttonsMessage.imageUrl,
-        //         text: buttonsMessage.message,
-        //     } as ImageButtonPayload;
-        // }
+            // if (buttonsMessage.imageUrl) {
+            //     return {
+            //         type: 'image',
+            //         image: buttonsMessage.imageUrl,
+            //         text: buttonsMessage.message,
+            //     } as ImageButtonPayload;
+            // }
 
-        // if (buttonsMessage.videoUrl) {
-        //     return {
-        //         type: 'video',
-        //         video: buttonsMessage.videoUrl,
-        //         text: buttonsMessage.message,
-        //     } as VideoButtonPayload;
-        // }
+            // if (buttonsMessage.videoUrl) {
+            //     return {
+            //         type: 'video',
+            //         video: buttonsMessage.videoUrl,
+            //         text: buttonsMessage.message,
+            //     } as VideoButtonPayload;
+            // }
         }
 
         // Handle AudioPayload
@@ -450,10 +457,10 @@ function extractMessagePayload(
 
         // Handle ContactPayload
         if (input.contact) {
-        // return {
-        //     type: 'contact',
-        //     contact: contact,
-        // } as ContactPayload;
+            // return {
+            //     type: 'contact',
+            //     contact: contact,
+            // } as ContactPayload;
         }
 
         // Handle DocumentPayload
@@ -493,10 +500,10 @@ function extractMessagePayload(
 
         // Handle LocationPayload
         if (input.location) {
-        // return {
-        //     type: 'location',
-        //     location: location,
-        // } as LocationPayload;
+            // return {
+            //     type: 'location',
+            //     location: location,
+            // } as LocationPayload;
         }
 
         // Handle carousel payload
