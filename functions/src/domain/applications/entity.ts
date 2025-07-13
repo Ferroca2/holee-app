@@ -11,9 +11,9 @@ export enum ApplicationStep {
 }
 
 export interface InterviewData {
-    checklist: string[];                          // Lista de itens a serem verificados (pré-entrevista)
-    roteiro: string;                              // Roteiro/script da entrevista (pré-entrevista)
-    anotacoes?: string;                           // Anotações preenchidas durante/após a entrevista
+    checklist: { text: string; tick: boolean }[]; // Checklist de itens a serem verificados (pré-entrevista)
+    script: string;                               // Script da entrevista (pré-entrevista)
+    notes?: string;                               // Anotações preenchidas durante/após a entrevista
 }
 
 export interface Application {

@@ -95,4 +95,4 @@ export * as firestore from './firestore';
 
 export * as pubsub from './pubsub';
 
-// export * as webService from './webService';
+export * as webService from './webService';
