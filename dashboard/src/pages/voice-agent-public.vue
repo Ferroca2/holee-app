@@ -589,8 +589,8 @@ const getAgentModeColor = () => {
                 </div>
 
                 <!-- Interview Information -->
-                <div class="row q-gutter-md full-width">
-                    <div class="col-12 col-md-6">
+                <div class="row q-gutter-md justify-center">
+                    <div class="col-auto">
                         <q-card>
                             <q-card-section>
                                 <div class="text-h6 q-mb-md">
@@ -609,7 +609,7 @@ const getAgentModeColor = () => {
                             </q-card-section>
                         </q-card>
                     </div>
-                    <div class="col-12 col-md-6">
+                    <div class="col-auto">
                         <q-card>
                             <q-card-section>
                                 <div class="text-h6 q-mb-md">
