@@ -95,7 +95,7 @@ export default async function optInApplicationTask(context: Request): Promise<vo
         // Create single message payload
         const message: MessagePayload = {
             type: 'text',
-            text: `🎉 Parabéns! Sua candidatura foi confirmada para *${job.title}*.\n\n📹 Realize sua entrevista: https://dionisio-crm.web.app/voice-agent-public/${jobId}/${existingApplication.id}\n\n⏰ Prazo: até ${formattedEndDate}`,
+            text: `🎉 Parabéns! Sua candidatura foi confirmada para *${job.title}*.\n\n📹 Realize sua entrevista a qualquer momento: https://holee-app.web.app/voice-agent-public/${jobId}/${conversationId}\n\n⏰ Cuidado com o prazo: até ${formattedEndDate}`,
         };
 
         // Send message
