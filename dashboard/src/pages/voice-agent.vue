@@ -117,6 +117,7 @@ const buildDynamicVariables = () => {
         // Job information
         companyName: store.name || 'Empresa',
         title: job.title || '',
+        jobId: job.id,
         seniorityLevel: job.seniorityLevel || '',
         location: job.location || '',
         workMode: job.workMode || '',
@@ -133,6 +134,7 @@ const buildDynamicVariables = () => {
         salaryRangemax: job.salaryRange?.max?.toString() || '',
 
         // Candidate information
+        candidateId: candidate.id,
         candidateName: candidate.relevantData?.name || candidate.name || '',
         candidateRegion: candidate.relevantData?.address || '',
         candidateExpectedSalary: candidate.relevantData?.expectedSalary?.toString() || '',
