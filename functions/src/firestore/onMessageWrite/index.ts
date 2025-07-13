@@ -65,9 +65,8 @@ export default async function onMessageWrite(
                     return;
                 }
 
-                const messagePathData = Buffer.from(JSON.stringify(messagePath));
                 await aiChatAiTopic.publishMessage({
-                    json: messagePathData,
+                    json: messagePath,
                 });
 
                 logger.info('Message published successfully to chat-ai topic');

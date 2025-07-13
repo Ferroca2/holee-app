@@ -59,6 +59,36 @@ export const processJobsForConversationTask = onTaskDispatched(
     data => import('./jobs/tasks/processJobsForConversationTask').then(m => m.default(data))
 );
 
+export const setApplicationTask = onTaskDispatched(
+    {
+        timeoutSeconds: 60,
+        memory: '256MiB',
+        cpu: 1,
+        retryConfig: {
+            maxAttempts: 1,
+        },
+        rateLimits: {
+            maxConcurrentDispatches: 1000,
+        },
+    },
+    req => import('./jobs/tasks/setApplicationTask').then(m => m.default(req.data))
+);
+
+export const optInApplicationTask = onTaskDispatched(
+    {
+        timeoutSeconds: 60,
+        memory: '256MiB',
+        cpu: 1,
+        retryConfig: {
+            maxAttempts: 1,
+        },
+        rateLimits: {
+            maxConcurrentDispatches: 1000,
+        },
+    },
+    req => import('./jobs/tasks/optInApplicationTask').then(m => m.default(req.data))
+);
+
 /* AI Service */
 
 export * as firestore from './firestore';

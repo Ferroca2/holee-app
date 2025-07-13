@@ -6,9 +6,11 @@ import { FirestoreEvent, Change } from 'firebase-functions/v2/firestore';
 import { Conversation } from '../../domain/conversations/entity';
 import { ProcessJobsForConversationTaskData } from '../../jobs/tasks/processJobsForConversationTask/types';
 import { OptInApplicationTaskData } from '../../jobs/tasks/optInApplicationTask/types';
+import { SetApplicationTaskData } from '../../jobs/tasks/setApplicationTask/types';
 
 const processJobsForConversationTaskQueue = getFunctions().taskQueue('processJobsForConversationTask');
 const optInApplicationTaskQueue = getFunctions().taskQueue('optInApplicationTask');
+const setApplicationTaskQueue = getFunctions().taskQueue('setApplicationTask');
 
 /**
  * Handler triggered when a conversation is written.
@@ -48,6 +50,8 @@ export default async function onConversationWrite(
         const currentEmployed = after?.get('employed') as Conversation['employed'] | undefined;
         const currentJobIds = after?.get('currentJobIds') as Conversation['currentJobIds'] | undefined;
         const previousJobIds = before?.get('currentJobIds') as Conversation['currentJobIds'] | undefined;
+        const currentFitResults = after?.get('fitResults') as Conversation['fitResults'] | undefined;
+        const previousFitResults = before?.get('fitResults') as Conversation['fitResults'] | undefined;
 
         switch (changeType) {
             case 'create': {
@@ -66,6 +70,26 @@ export default async function onConversationWrite(
                         );
 
                         logger.info(`[${conversationId}] Enqueued optInApplicationTask for job ${jobId} (new conversation)`);
+                    });
+
+                    await Promise.all(taskPromises);
+                }
+
+                // Check if new conversation has fitResults
+                if (currentFitResults && currentFitResults.length > 0) {
+                    // For new conversations, all fitResults are considered "new"
+                    const taskPromises = currentFitResults.map(async fitResult => {
+                        const taskData: SetApplicationTaskData = {
+                            conversationId,
+                            jobId: fitResult.jobId,
+                        };
+
+                        await setApplicationTaskQueue.enqueue(
+                            taskData,
+                            { scheduleTime: new Date() }
+                        );
+
+                        logger.info(`[${conversationId}] Enqueued setApplicationTask for job ${fitResult.jobId} (new conversation)`);
                     });
 
                     await Promise.all(taskPromises);
@@ -113,6 +137,35 @@ export default async function onConversationWrite(
                             );
 
                             logger.info(`[${conversationId}] Enqueued optInApplicationTask for job ${jobId} (opt-in detected)`);
+                        });
+
+                        await Promise.all(taskPromises);
+                    }
+                }
+
+                // Check for fitResults changes using Set for efficient lookup
+                if (currentFitResults && currentFitResults.length > 0) {
+                    const previousFitResultsSet = new Set(
+                        (previousFitResults || []).map(fitResult => fitResult.jobId)
+                    );
+
+                    const newFitResults = currentFitResults.filter(
+                        fitResult => !previousFitResultsSet.has(fitResult.jobId)
+                    );
+
+                    if (newFitResults.length > 0) {
+                        const taskPromises = newFitResults.map(async fitResult => {
+                            const taskData: SetApplicationTaskData = {
+                                conversationId,
+                                jobId: fitResult.jobId,
+                            };
+
+                            await setApplicationTaskQueue.enqueue(
+                                taskData,
+                                { scheduleTime: new Date() }
+                            );
+
+                            logger.info(`[${conversationId}] Enqueued setApplicationTask for job ${fitResult.jobId} (new fit result detected)`);
                         });
 
                         await Promise.all(taskPromises);
