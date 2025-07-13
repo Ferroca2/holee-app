@@ -106,8 +106,8 @@ export default async function processJobsForConversationTask(context: Request): 
             // Filter out null results
             const validJobsWithStores = jobsWithStores.filter((item): item is { job: any; store: any; fitScore: number } => item !== null);
             if (validJobsWithStores.length > 0) {
-                const carousel = validJobsWithStores.map((item: { job: any; store: any; fitScore: number }) => ({
-                    image: item.store.logo,
+                const carousel = validJobsWithStores.map((item) => ({
+                    image: item.store.logo || 'https://placehold.co/400',
                     text: `*${item.job.title}* - ${item.store.name}\n\n${item.job.description}\n\n📍 ${item.job.location}\n💰 ${item.job.salaryRange ? `R$ ${item.job.salaryRange.min.toLocaleString()} - R$ ${item.job.salaryRange.max.toLocaleString()}` : 'Salário a combinar'}\n`,
                     buttons: [
                         {
@@ -117,10 +117,11 @@ export default async function processJobsForConversationTask(context: Request): 
                     ],
                 }));
 
-                await zApiService.sendMessage(conversation.id, {
-                    type: 'carousel',
-                    text: `🎯 Encontramos ${validJobsWithStores.length} nova${validJobsWithStores.length > 1 ? 's' : ''} vaga${validJobsWithStores.length > 1 ? 's' : ''} que combina${validJobsWithStores.length > 1 ? 'm' : ''} com você:`,
-                    cards: carousel,
+                // Enviar carrossel
+                await zApiService.sendCarousel({
+                    phone: conversationId,
+                    message: `🎯 Encontramos ${validJobsWithStores.length} vaga${validJobsWithStores.length > 1 ? 's' : ''} que pode${validJobsWithStores.length > 1 ? 'm' : ''} ser interessante${validJobsWithStores.length > 1 ? 's' : ''} para você:`,
+                    carousel,
                 });
 
                 logger.info(`[${conversationId}] Sent carousel with ${validJobsWithStores.length} new job matches`);

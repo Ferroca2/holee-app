@@ -336,7 +336,7 @@ async function searchRelatedJobs(conversationId: string) {
 
         // Criar carrossel
         const carousel = validJobsWithStores.map((item) => ({
-            image: item.store.logo || 'https://via.placeholder.com/300x200?text=Empresa',
+            image: item.store.logo || 'https://placehold.co/400',
             text: `*${item.job.title}* - ${item.store.name}\n\n${item.job.description}\n\n📍 ${item.job.location}\n💰 ${item.job.salaryRange ? `R$ ${item.job.salaryRange.min.toLocaleString()} - R$ ${item.job.salaryRange.max.toLocaleString()}` : 'Salário a combinar'}\n`,
             buttons: [
                 {
@@ -418,7 +418,7 @@ async function listActiveApplications(conversationId: string) {
 
         // Criar carrossel
         const carousel = validApplicationsWithJobsAndStores.map((item) => ({
-            image: item.store.logo || 'https://via.placeholder.com/300x200?text=Empresa',
+            image: item.store.logo || 'https://placehold.co/400',
             text: `*${item.job.title}* - ${item.store.name}\n\n${item.job.description}\n\n📍 ${item.job.location}\n💰 ${item.job.salaryRange ? `R$ ${item.job.salaryRange.min.toLocaleString()} - R$ ${item.job.salaryRange.max.toLocaleString()}` : 'Salário a combinar'}}\n`,
             buttons: [
                 {

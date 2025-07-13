@@ -6,13 +6,29 @@ O Holee App é uma plataforma completa de recrutamento que conecta candidatos a 
 
 ## Como Usar na Prática
 
-### Portal: https://holee-app.web.app/
-Login: hr@techcorp.com
-Senha: hr123456
+### Portal (Recrutador)
 
-### Link do WhatsApp
+- https://holee-app.web.app/
+- Login: hr@techcorp.com
+- Senha: hr123456
+
+### Link do WhatsApp (Candidato)
 
 https://wa.me/5511956029500
+
+### Fluxo do Recrutador
+
+1. Cria uma vaga
+2. Esperar a data de fim que ele mesmo define
+3. Receber ranking de candidatos super qualificados
+
+### Fluxo do Candidato
+
+1. Se cadastrar via WhatsApp
+2. Receber divulgações de vagas
+3. Se inscrever em uma vaga
+4. Participar de uma entrevista por voz
+5. Esperar o recrutador chamar ele após a vaga ser finalizada
 
 ## 🎯 Visão Geral
 
