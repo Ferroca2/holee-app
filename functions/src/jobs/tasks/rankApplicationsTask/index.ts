@@ -119,7 +119,7 @@ export default async function rankApplicationsTask(context: Request): Promise<vo
         });
 
         // 8. Update applications to RANKING
-        const updateRankingPromises = ranking.map(async (candidateId) => {
+        const updateRankingPromises = ranking.map(async candidateId => {
             await ApplicationsRepository.updateApplication(candidateId, {
                 currentStep: ApplicationStep.RANKING,
                 updatedAt: Date.now(),
@@ -127,7 +127,7 @@ export default async function rankApplicationsTask(context: Request): Promise<vo
         });
 
         // 9. Update the 3*num_positions candidates to FINALIST
-        const updateFinalistPromises = ranking.slice(0, job.numberOfPositions * 3).map(async (candidateId) => {
+        const updateFinalistPromises = ranking.slice(0, job.numberOfPositions * 3).map(async candidateId => {
             await ApplicationsRepository.updateApplication(candidateId, {
                 currentStep: ApplicationStep.FINALIST,
                 updatedAt: Date.now(),
