@@ -14,10 +14,12 @@ import baseButton from 'components/ui/base-button.vue';
 import JobRepository from '../domain/jobs/repository';
 import ConversationRepository from '../domain/conversations/repository';
 import StoreRepository from '../domain/stores/repository';
+import ApplicationRepository from '../domain/applications/repository';
 import { BaseRef } from '../domain';
 import { Job } from '../domain/jobs/entity';
 import { Conversation as ConversationEntity } from '../domain/conversations/entity';
 import { Store } from '../domain/stores/entity';
+import { Application } from '../domain/applications/entity';
 
 const $q = useQuasar();
 const route = useRoute();
@@ -28,6 +30,10 @@ const isConnected = ref(false);
 const isConnecting = ref(false);
 const agentMode = ref<'listening' | 'speaking'>('listening');
 const conversation = ref<any>(null);
+
+// Add application state
+const application = ref<BaseRef<Application> | null>(null);
+const loadingApplication = ref(false);
 
 // Data from route
 const jobId = computed(() => route.params.jobId as string);
@@ -55,7 +61,7 @@ const connectionStatus = ref<'disconnected' | 'connecting' | 'connected'>('disco
 
 // Computed properties for form validation
 const canStartInterview = computed(() => {
-    return job.value && candidate.value && store.value && !isConnecting.value && !isConnected.value && !loading.value;
+    return job.value && candidate.value && store.value && !isConnecting.value && !isConnected.value && !loading.value && !loadingApplication.value;
 });
 
 // Load job, candidate, and store data
@@ -97,11 +103,35 @@ const loadData = async () => {
 
         store.value = storeData;
 
+        // Load application data after job and candidate are loaded
+        await loadApplication();
+
     } catch (err) {
         console.error('Error loading data:', err);
         loadingError.value = 'Erro ao carregar dados da entrevista';
     } finally {
         loading.value = false;
+    }
+};
+
+// Add function to load application data
+const loadApplication = async () => {
+    if (!job.value || !candidate.value) {
+        application.value = null;
+        return;
+    }
+
+    try {
+        loadingApplication.value = true;
+        application.value = await ApplicationRepository.getApplicationsByJobAndConversation(
+            job.value.id,
+            candidate.value.id
+        );
+    } catch (err) {
+        console.error('Error loading application:', err);
+        application.value = null;
+    } finally {
+        loadingApplication.value = false;
     }
 };
 
@@ -120,6 +150,11 @@ const buildDynamicVariables = () => {
         return condition ? value : '';
     };
 
+    // Get script and checklist from application
+    const script = application.value?.interviewData?.script || '';
+    const checklist = application.value?.interviewData?.checklist ?
+        application.value.interviewData.checklist.map(item => item.text).join(', ') : '';
+
     const variables = {
         // Required variables
         agentName: 'Assistente de Recrutamento',
@@ -128,6 +163,7 @@ const buildDynamicVariables = () => {
         // Job information
         companyName: storeData.name || 'Empresa',
         title: jobData.title || '',
+        jobId: jobData.id,
         seniorityLevel: jobData.seniorityLevel || '',
         location: jobData.location || '',
         workMode: jobData.workMode || '',
@@ -144,27 +180,36 @@ const buildDynamicVariables = () => {
         salaryRangemax: jobData.salaryRange?.max?.toString() || '',
 
         // Candidate information
+        candidateId: candidateData.id,
         candidateName: candidateData.relevantData?.name || candidateData.name || '',
+        candidateFullName: candidateData.relevantData?.name || candidateData.name || '',
         candidateRegion: candidateData.relevantData?.address || '',
         candidateExpectedSalary: candidateData.relevantData?.expectedSalary?.toString() || '',
         candidateEmploymentStatus: candidateData.employed ? 'Empregado' : 'Desempregado',
         candidateInterests: Array.isArray(candidateData.relevantData?.interests) ? candidateData.relevantData.interests.join(', ') : '',
         candidateLinkedIn: candidateData.relevantData?.linkedin || '',
 
+        // Application interview data
+        script: script,
+        checklist: checklist,
+
         // Conditional variables (if_xxx)
-        ifSalaryRange: createConditional(Boolean(jobData.salaryRange?.min && jobData.salaryRange?.max)),
-        ifCandidateName: createConditional(Boolean(candidateData.relevantData?.name || candidateData.name)),
-        ifNiceToHaveSkills: createConditional(Boolean(jobData.niceToHaveSkills && jobData.niceToHaveSkills.length > 0)),
-        ifLanguagesRequired: createConditional(Boolean(jobData.languagesRequired && jobData.languagesRequired.length > 0)),
-        ifCandidateInterests: createConditional(Boolean(candidateData.relevantData?.interests && candidateData.relevantData.interests.length > 0)),
-        ifCandidateRegion: createConditional(Boolean(candidateData.relevantData?.address)),
-        ifLocation: createConditional(Boolean(jobData.location)),
-        ifWorkMode: createConditional(Boolean(jobData.workMode)),
-        ifMinExperienceYears: createConditional(Boolean(jobData.minExperienceYears && jobData.minExperienceYears > 0)),
-        ifCandidateEmployed: createConditional(Boolean(candidateData.employed)),
-        ifCandidateExpectedSalary: createConditional(Boolean(candidateData.relevantData?.expectedSalary)),
-        ifNumberOfPositions: createConditional(Boolean(jobData.numberOfPositions && jobData.numberOfPositions > 1)),
-        ifSeniorityLevel: createConditional(Boolean(jobData.seniorityLevel)),
+        'if_salaryRange': createConditional(Boolean(jobData.salaryRange?.min && jobData.salaryRange?.max)),
+        'if_candidateName': createConditional(Boolean(candidateData.relevantData?.name || candidateData.name)),
+        'if_candidateFullName': createConditional(Boolean(candidateData.relevantData?.name || candidateData.name)),
+        'if_niceToHaveSkills': createConditional(Boolean(jobData.niceToHaveSkills && jobData.niceToHaveSkills.length > 0)),
+        'if_languagesRequired': createConditional(Boolean(jobData.languagesRequired && jobData.languagesRequired.length > 0)),
+        'if_candidateInterests': createConditional(Boolean(candidateData.relevantData?.interests && candidateData.relevantData.interests.length > 0)),
+        'if_candidateRegion': createConditional(Boolean(candidateData.relevantData?.address)),
+        'if_location': createConditional(Boolean(jobData.location)),
+        'if_workMode': createConditional(Boolean(jobData.workMode)),
+        'if_minExperienceYears': createConditional(Boolean(jobData.minExperienceYears && jobData.minExperienceYears > 0)),
+        'if_candidateEmployed': createConditional(Boolean(candidateData.employed)),
+        'if_candidateExpectedSalary': createConditional(Boolean(candidateData.relevantData?.expectedSalary)),
+        'if_numberOfPositions': createConditional(Boolean(jobData.numberOfPositions && jobData.numberOfPositions > 1)),
+        'if_seniorityLevel': createConditional(Boolean(jobData.seniorityLevel)),
+        'if_script': createConditional(Boolean(script)),
+        'if_checklist': createConditional(Boolean(checklist)),
     };
 
     return variables;
@@ -364,6 +409,9 @@ const startConversation = async () => {
         // Start audio visualization first
         await startAudioVisualization();
 
+        // Ensure application data is loaded
+        await loadApplication();
+
         // Build dynamic variables
         const dynamicVariables = buildDynamicVariables();
 
@@ -373,6 +421,7 @@ const startConversation = async () => {
         conversation.value = await Conversation.startSession({
             agentId: AGENT_ID,
             dynamicVariables,
+            userId: `${job.value?.id}_${candidate.value?.id}`,
             onConnect: () => {
                 connectionStatus.value = 'connected';
                 isConnected.value = true;
@@ -540,8 +589,8 @@ const getAgentModeColor = () => {
                 </div>
 
                 <!-- Interview Information -->
-                <div class="row q-gutter-md full-width">
-                    <div class="col-12 col-md-6">
+                <div class="row q-gutter-md justify-center">
+                    <div class="col-auto">
                         <q-card>
                             <q-card-section>
                                 <div class="text-h6 q-mb-md">
@@ -560,7 +609,7 @@ const getAgentModeColor = () => {
                             </q-card-section>
                         </q-card>
                     </div>
-                    <div class="col-12 col-md-6">
+                    <div class="col-auto">
                         <q-card>
                             <q-card-section>
                                 <div class="text-h6 q-mb-md">

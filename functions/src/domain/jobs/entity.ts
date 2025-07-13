@@ -43,6 +43,8 @@ export interface Job {
 
     status: JobStatus;                        // Status da vaga (OPEN, CLOSED)
 
+    finalRanking?: string[];                  // IDs dos candidatos finalistas (após ranking)
+
     createdAt: number;                        // Data de criação (epoch ms) (timestamp)
     updatedAt?: number;                       // Data de atualização (epoch ms) (timestamp)
 }

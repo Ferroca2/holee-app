@@ -34,7 +34,7 @@ Você deve avaliar a compatibilidade entre a vaga e o perfil do candidato e reto
 
 Lembre de avaliar muito bem, o usuário não quer entrar em uma vaga que não é compatível com o seu perfil e o empregador não quer perder tempo com candidatos que não são compatíveis.
 
-retorne pontuações entre 0 e 30 para candidatos que não são compatíveis, entre 31 e 69 para candidatos que são compatíveis, e entre 70 e 100 para candidatos que são muito compatíveis.
+retorne pontuações entre 0 e 30 para candidatos que não são compatíveis, entre 31 e 69 para candidatos mediocres, e entre 70 e 100 para candidatos que são compatíveis.
 `;
     }
 

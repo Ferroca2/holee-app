@@ -167,17 +167,19 @@ async function processJobForConversation(job: AdminBaseRef<Job>, conversation: A
         return null;
     }
 
-    const matchAgent = new MatchAgent(conversation.id);
-    const matchScore = await matchAgent.process(jobDescription, personDescription);
-    if (!matchScore) {
-        return null;
-    }
+    return { jobId: job.id, fitScore: fitScore };
 
-    if (matchScore.matchScore >= 70) {
-        return { jobId: job.id, fitScore: matchScore.matchScore / 100 };
-    }
+    // const matchAgent = new MatchAgent(conversation.id);
+    // const matchScore = await matchAgent.process(jobDescription, personDescription);
+    // if (!matchScore) {
+    //     return null;
+    // }
 
-    return null;
+    // if (matchScore.matchScore >= 70) {
+    //     return { jobId: job.id, fitScore: matchScore.matchScore / 100 };
+    // }
+
+    // return null;
 }
 
 /**

@@ -5,6 +5,8 @@ import FirecrawlApp, { ScrapeResponse } from '@mendable/firecrawl-js';
 import conversationsRepository from "../domain/conversations/repository";
 import OpenAI from 'openai';
 import { CompareCandidates } from './compareCandidates';
+import { Application } from "../domain/applications/entity";
+import { AdminBaseRef } from "@/domain";
 
 
 export const getCrawlResult = async (url: string) => {
@@ -124,6 +126,7 @@ export function parseResoningResponse(response: {
     reasoning: string;
     response: string;
 }): string {
+    return response.response.trim();
     return `
 <reasoning>
 ${response.reasoning}
@@ -151,6 +154,30 @@ export async function getUserDescription(conversationId: string): Promise<string
     Descrição: ${description}
     Habilidades: ${skills}
     Interesses: ${interests}
+    `;
+}
+
+/**
+ * Gets the user description from the conversation.
+ * @param conversationId - The id of the conversation.
+ * @param summary - The summary of the interview.
+ * @returns The user description.
+ */
+export async function getUserDescriptionWithSumary(conversationId: string, summary: string): Promise<string> {
+    const conversation = await conversationsRepository.getConversationById(conversationId);
+    const relevantData = conversation?.relevantData;
+
+    const name = relevantData?.name || '';
+    const description = relevantData?.description || 'Não informado';
+    const skills = relevantData?.skills || 'Não informado';
+    const interests = relevantData?.interests || 'Não informado';
+
+    return `
+    Nome: ${name}
+    Descrição: ${description}
+    Habilidades: ${skills}
+    Interesses: ${interests}
+    Resumo da Entrevista: ${summary}
     `;
 }
 
@@ -224,24 +251,15 @@ export function calculateCosineSimilarity(vectorA: number[], vectorB: number[]):
  * @returns Ranking dos candidatos ordenado do melhor para o pior.
  */
 export async function swissArmyCompare(
-    conversationIds: string[],
+    applications: AdminBaseRef<Application>[],
     jobDescription: string,
     maxRounds: number = 3
 ): Promise<string[]> {
-        // Validações iniciais
-    if (!conversationIds || conversationIds.length === 0) {
-        throw new Error('Array de conversationIds não pode estar vazio');
-    }
-
-    if (conversationIds.length === 1) {
-        return [conversationIds[0]!];
-    }
-
     // Obtém descrições dos candidatos
     const candidatesData = await Promise.all(
-        conversationIds.map(async (id) => ({
-            id,
-            resumo: await getUserDescription(id)
+        applications.map(async (application) => ({
+            id: application.id,
+            resumo: await getUserDescriptionWithSumary(application.conversationId, application.interviewData?.transcriptSummary || '')
         }))
     );
 

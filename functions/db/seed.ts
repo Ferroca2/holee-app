@@ -1,19 +1,21 @@
 /* eslint-disable no-await-in-loop */
 import firebaseAdmin from 'firebase-admin';
 import axios from 'axios';
+import * as serviceAccount from './holee-app-firebase-adminsdk-fbsvc-6734396774.json';
+
 
 // Initialize Firebase Admin with emulator settings
-const FIRESTORE_EMULATOR_PORT = 8090;
-const AUTH_EMULATOR_PORT = 9099;
-const STORAGE_EMULATOR_PORT = 9199;
+// const FIRESTORE_EMULATOR_PORT = 8090;
+// const AUTH_EMULATOR_PORT = 9099;
+// const STORAGE_EMULATOR_PORT = 9199;
 
-process.env.FIRESTORE_EMULATOR_HOST = `127.0.0.1:${FIRESTORE_EMULATOR_PORT}`;
-process.env.FIREBASE_AUTH_EMULATOR_HOST = `127.0.0.1:${AUTH_EMULATOR_PORT}`;
-process.env.FIREBASE_STORAGE_EMULATOR_HOST = `127.0.0.1:${STORAGE_EMULATOR_PORT}`;
+// process.env.FIRESTORE_EMULATOR_HOST = `127.0.0.1:${FIRESTORE_EMULATOR_PORT}`;
+// process.env.FIREBASE_AUTH_EMULATOR_HOST = `127.0.0.1:${AUTH_EMULATOR_PORT}`;
+// process.env.FIREBASE_STORAGE_EMULATOR_HOST = `127.0.0.1:${STORAGE_EMULATOR_PORT}`;
 
 const adminApp = firebaseAdmin.initializeApp({
+    credential: firebaseAdmin.credential.cert(serviceAccount as firebaseAdmin.ServiceAccount),
     projectId: 'holee-app',
-    storageBucket: 'holee-app.appspot.com',
 });
 
 export const dbAdmin = adminApp.firestore();
@@ -39,8 +41,8 @@ export const clearFirestoreData = async () =>
     console.log('Starting database seeding...');
 
     // Clear existing data
-    await clearAuthData();
-    await clearFirestoreData();
+    // await clearAuthData();
+    // await clearFirestoreData();
 
     // Create HR User
     const hrDisplayName = 'HR Manager';
@@ -673,6 +675,39 @@ export const clearFirestoreData = async () =>
             conversationId: createdConversations[11]!, // Bruno Cardoso
             status: ApplicationStatus.IN_PROGRESS,
             currentStep: ApplicationStep.INTERVIEW,
+            interviewData: {
+                script: `Bem-vindo à entrevista para a posição de Backend Developer Java na TechCorp Solutions.
+
+Vou fazer algumas perguntas técnicas e comportamentais para entender melhor seu perfil e experiência.
+
+Perguntas técnicas:
+1. Explique a diferença entre Spring Boot e Spring Framework
+2. Como você implementaria um sistema de cache em Java?
+3. Quais são as principais vantagens dos microserviços?
+4. Como você garante a qualidade do código em seus projetos?
+5. Explique o conceito de injeção de dependência
+
+Perguntas comportamentais:
+1. Conte sobre um projeto desafiador que você trabalhou
+2. Como você lida com prazos apertados?
+3. Descreva uma situação onde você teve que aprender uma nova tecnologia rapidamente
+4. Como você trabalha em equipe?
+5. Quais são seus planos de carreira?
+
+Lembre-se de avaliar não apenas o conhecimento técnico, mas também soft skills, capacidade de comunicação e fit cultural.`,
+                checklist: [
+                    { text: 'Verificar experiência com Java e Spring Boot', tick: false },
+                    { text: 'Avaliar conhecimento em bancos de dados (SQL)', tick: false },
+                    { text: 'Confirmar experiência com REST APIs', tick: false },
+                    { text: 'Verificar conhecimento em microserviços', tick: false },
+                    { text: 'Avaliar capacidade de resolução de problemas', tick: false },
+                    { text: 'Confirmar disponibilidade para trabalho híbrido', tick: false },
+                    { text: 'Verificar expectativa salarial (R$ 9.000 - R$ 14.000)', tick: false },
+                    { text: 'Avaliar soft skills e comunicação', tick: false },
+                    { text: 'Confirmar interesse na posição', tick: false },
+                    { text: 'Verificar fit cultural com a empresa', tick: false },
+                ],
+            },
             createdAt: currentTime - (9 * 60 * 60 * 1000),
             updatedAt: currentTime - (6 * 60 * 60 * 1000),
         },
@@ -681,6 +716,39 @@ export const clearFirestoreData = async () =>
             conversationId: createdConversations[12]!, // Camila Rodrigues
             status: ApplicationStatus.IN_PROGRESS,
             currentStep: ApplicationStep.INTERVIEW,
+            interviewData: {
+                script: `Bem-vindo à entrevista para a posição de Backend Developer Java na TechCorp Solutions.
+
+Vou fazer algumas perguntas técnicas e comportamentais para entender melhor seu perfil e experiência.
+
+Perguntas técnicas:
+1. Explique a diferença entre Spring Boot e Spring Framework
+2. Como você implementaria um sistema de cache em Java?
+3. Quais são as principais vantagens dos microserviços?
+4. Como você garante a qualidade do código em seus projetos?
+5. Explique o conceito de injeção de dependência
+
+Perguntas comportamentais:
+1. Conte sobre um projeto desafiador que você trabalhou
+2. Como você lida com prazos apertados?
+3. Descreva uma situação onde você teve que aprender uma nova tecnologia rapidamente
+4. Como você trabalha em equipe?
+5. Quais são seus planos de carreira?
+
+Lembre-se de avaliar não apenas o conhecimento técnico, mas também soft skills, capacidade de comunicação e fit cultural.`,
+                checklist: [
+                    { text: 'Verificar experiência com Java e Spring Boot', tick: false },
+                    { text: 'Avaliar conhecimento em bancos de dados (SQL)', tick: false },
+                    { text: 'Confirmar experiência com REST APIs', tick: false },
+                    { text: 'Verificar conhecimento em microserviços', tick: false },
+                    { text: 'Avaliar capacidade de resolução de problemas', tick: false },
+                    { text: 'Confirmar disponibilidade para trabalho híbrido', tick: false },
+                    { text: 'Verificar expectativa salarial (R$ 9.000 - R$ 14.000)', tick: false },
+                    { text: 'Avaliar soft skills e comunicação', tick: false },
+                    { text: 'Confirmar interesse na posição', tick: false },
+                    { text: 'Verificar fit cultural com a empresa', tick: false },
+                ],
+            },
             createdAt: currentTime - (10 * 60 * 60 * 1000),
             updatedAt: currentTime - (5 * 60 * 60 * 1000),
         },
@@ -689,6 +757,39 @@ export const clearFirestoreData = async () =>
             conversationId: createdConversations[13]!, // João Silva (additional candidate)
             status: ApplicationStatus.IN_PROGRESS,
             currentStep: ApplicationStep.INTERVIEW,
+            interviewData: {
+                script: `Bem-vindo à entrevista para a posição de Backend Developer Java na TechCorp Solutions.
+
+Vou fazer algumas perguntas técnicas e comportamentais para entender melhor seu perfil e experiência.
+
+Perguntas técnicas:
+1. Explique a diferença entre Spring Boot e Spring Framework
+2. Como você implementaria um sistema de cache em Java?
+3. Quais são as principais vantagens dos microserviços?
+4. Como você garante a qualidade do código em seus projetos?
+5. Explique o conceito de injeção de dependência
+
+Perguntas comportamentais:
+1. Conte sobre um projeto desafiador que você trabalhou
+2. Como você lida com prazos apertados?
+3. Descreva uma situação onde você teve que aprender uma nova tecnologia rapidamente
+4. Como você trabalha em equipe?
+5. Quais são seus planos de carreira?
+
+Lembre-se de avaliar não apenas o conhecimento técnico, mas também soft skills, capacidade de comunicação e fit cultural.`,
+                checklist: [
+                    { text: 'Verificar experiência com Java e Spring Boot', tick: false },
+                    { text: 'Avaliar conhecimento em bancos de dados (SQL)', tick: false },
+                    { text: 'Confirmar experiência com REST APIs', tick: false },
+                    { text: 'Verificar conhecimento em microserviços', tick: false },
+                    { text: 'Avaliar capacidade de resolução de problemas', tick: false },
+                    { text: 'Confirmar disponibilidade para trabalho híbrido', tick: false },
+                    { text: 'Verificar expectativa salarial (R$ 9.000 - R$ 14.000)', tick: false },
+                    { text: 'Avaliar soft skills e comunicação', tick: false },
+                    { text: 'Confirmar interesse na posição', tick: false },
+                    { text: 'Verificar fit cultural com a empresa', tick: false },
+                ],
+            },
             createdAt: currentTime - (12 * 60 * 60 * 1000),
             updatedAt: currentTime - (4 * 60 * 60 * 1000),
         },
@@ -698,6 +799,40 @@ export const clearFirestoreData = async () =>
             conversationId: createdConversations[14]!, // Maria Santos (additional candidate)
             status: ApplicationStatus.IN_PROGRESS,
             currentStep: ApplicationStep.RANKING,
+            interviewData: {
+                script: `Bem-vindo à entrevista para a posição de Backend Developer Java na TechCorp Solutions.
+
+Vou fazer algumas perguntas técnicas e comportamentais para entender melhor seu perfil e experiência.
+
+Perguntas técnicas:
+1. Explique a diferença entre Spring Boot e Spring Framework
+2. Como você implementaria um sistema de cache em Java?
+3. Quais são as principais vantagens dos microserviços?
+4. Como você garante a qualidade do código em seus projetos?
+5. Explique o conceito de injeção de dependência
+
+Perguntas comportamentais:
+1. Conte sobre um projeto desafiador que você trabalhou
+2. Como você lida com prazos apertados?
+3. Descreva uma situação onde você teve que aprender uma nova tecnologia rapidamente
+4. Como você trabalha em equipe?
+5. Quais são seus planos de carreira?
+
+Lembre-se de avaliar não apenas o conhecimento técnico, mas também soft skills, capacidade de comunicação e fit cultural.`,
+                checklist: [
+                    { text: 'Verificar experiência com Java e Spring Boot', tick: true },
+                    { text: 'Avaliar conhecimento em bancos de dados (SQL)', tick: true },
+                    { text: 'Confirmar experiência com REST APIs', tick: true },
+                    { text: 'Verificar conhecimento em microserviços', tick: false },
+                    { text: 'Avaliar capacidade de resolução de problemas', tick: true },
+                    { text: 'Confirmar disponibilidade para trabalho híbrido', tick: true },
+                    { text: 'Verificar expectativa salarial (R$ 9.000 - R$ 14.000)', tick: true },
+                    { text: 'Avaliar soft skills e comunicação', tick: true },
+                    { text: 'Confirmar interesse na posição', tick: true },
+                    { text: 'Verificar fit cultural com a empresa', tick: true },
+                ],
+                notes: 'Candidata com boa experiência em Java e Spring Boot. Demonstrou conhecimento sólido em REST APIs e bancos de dados. Soft skills adequadas e boa comunicação. Expectativa salarial dentro da faixa. Falta experiência com microserviços.',
+            },
             createdAt: currentTime - (20 * 60 * 60 * 1000),
             updatedAt: currentTime - (3 * 60 * 60 * 1000),
         },
@@ -706,6 +841,40 @@ export const clearFirestoreData = async () =>
             conversationId: createdConversations[15]!, // Carlos Oliveira (additional candidate)
             status: ApplicationStatus.IN_PROGRESS,
             currentStep: ApplicationStep.RANKING,
+            interviewData: {
+                script: `Bem-vindo à entrevista para a posição de Backend Developer Java na TechCorp Solutions.
+
+Vou fazer algumas perguntas técnicas e comportamentais para entender melhor seu perfil e experiência.
+
+Perguntas técnicas:
+1. Explique a diferença entre Spring Boot e Spring Framework
+2. Como você implementaria um sistema de cache em Java?
+3. Quais são as principais vantagens dos microserviços?
+4. Como você garante a qualidade do código em seus projetos?
+5. Explique o conceito de injeção de dependência
+
+Perguntas comportamentais:
+1. Conte sobre um projeto desafiador que você trabalhou
+2. Como você lida com prazos apertados?
+3. Descreva uma situação onde você teve que aprender uma nova tecnologia rapidamente
+4. Como você trabalha em equipe?
+5. Quais são seus planos de carreira?
+
+Lembre-se de avaliar não apenas o conhecimento técnico, mas também soft skills, capacidade de comunicação e fit cultural.`,
+                checklist: [
+                    { text: 'Verificar experiência com Java e Spring Boot', tick: true },
+                    { text: 'Avaliar conhecimento em bancos de dados (SQL)', tick: true },
+                    { text: 'Confirmar experiência com REST APIs', tick: true },
+                    { text: 'Verificar conhecimento em microserviços', tick: true },
+                    { text: 'Avaliar capacidade de resolução de problemas', tick: true },
+                    { text: 'Confirmar disponibilidade para trabalho híbrido', tick: true },
+                    { text: 'Verificar expectativa salarial (R$ 9.000 - R$ 14.000)', tick: false },
+                    { text: 'Avaliar soft skills e comunicação', tick: true },
+                    { text: 'Confirmar interesse na posição', tick: true },
+                    { text: 'Verificar fit cultural com a empresa', tick: true },
+                ],
+                notes: 'Excelente candidato com ampla experiência em Java, Spring Boot e microserviços. Demonstrou conhecimento avançado em arquitetura de software. Ótimas soft skills e liderança. Expectativa salarial acima da faixa (R$ 18.000). Atualmente empregado.',
+            },
             createdAt: currentTime - (24 * 60 * 60 * 1000),
             updatedAt: currentTime - (2 * 60 * 60 * 1000),
         },
@@ -715,6 +884,40 @@ export const clearFirestoreData = async () =>
             conversationId: createdConversations[16]!, // Ana Costa (additional candidate)
             status: ApplicationStatus.IN_PROGRESS,
             currentStep: ApplicationStep.FINALIST,
+            interviewData: {
+                script: `Bem-vindo à entrevista para a posição de Backend Developer Java na TechCorp Solutions.
+
+Vou fazer algumas perguntas técnicas e comportamentais para entender melhor seu perfil e experiência.
+
+Perguntas técnicas:
+1. Explique a diferença entre Spring Boot e Spring Framework
+2. Como você implementaria um sistema de cache em Java?
+3. Quais são as principais vantagens dos microserviços?
+4. Como você garante a qualidade do código em seus projetos?
+5. Explique o conceito de injeção de dependência
+
+Perguntas comportamentais:
+1. Conte sobre um projeto desafiador que você trabalhou
+2. Como você lida com prazos apertados?
+3. Descreva uma situação onde você teve que aprender uma nova tecnologia rapidamente
+4. Como você trabalha em equipe?
+5. Quais são seus planos de carreira?
+
+Lembre-se de avaliar não apenas o conhecimento técnico, mas também soft skills, capacidade de comunicação e fit cultural.`,
+                checklist: [
+                    { text: 'Verificar experiência com Java e Spring Boot', tick: true },
+                    { text: 'Avaliar conhecimento em bancos de dados (SQL)', tick: true },
+                    { text: 'Confirmar experiência com REST APIs', tick: true },
+                    { text: 'Verificar conhecimento em microserviços', tick: false },
+                    { text: 'Avaliar capacidade de resolução de problemas', tick: true },
+                    { text: 'Confirmar disponibilidade para trabalho híbrido', tick: true },
+                    { text: 'Verificar expectativa salarial (R$ 9.000 - R$ 14.000)', tick: true },
+                    { text: 'Avaliar soft skills e comunicação', tick: true },
+                    { text: 'Confirmar interesse na posição', tick: true },
+                    { text: 'Verificar fit cultural com a empresa', tick: true },
+                ],
+                notes: 'Candidata muito promissora com sólida experiência em Java e Spring Boot. Boa capacidade de resolução de problemas e excelente comunicação. Expectativa salarial dentro da faixa. Demonstrou grande interesse na posição e fit cultural excelente. Perfil ideal para a vaga.',
+            },
             createdAt: currentTime - (30 * 60 * 60 * 1000),
             updatedAt: currentTime - (1 * 60 * 60 * 1000),
         },

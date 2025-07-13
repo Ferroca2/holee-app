@@ -65,7 +65,6 @@ const isMobile = computed(() => $q.screen.lt.md);
 // Application step labels in Portuguese
 const applicationStepLabels: Record<ApplicationStep, string> = {
     [ApplicationStep.MATCH_WITH_JOB]: 'Match com Vaga',
-    [ApplicationStep.ACCEPT_JOB]: 'Aceitar Vaga',
     [ApplicationStep.INTERVIEW]: 'Entrevista',
     [ApplicationStep.RANKING]: 'Ranking',
     [ApplicationStep.FINALIST]: 'Finalista',
@@ -97,7 +96,6 @@ const totalApplications = computed(() => applications.value.length);
 const applicationsByStep = computed(() => {
     const groups: Record<ApplicationStep, BaseRef<Application>[]> = {
         [ApplicationStep.MATCH_WITH_JOB]: [],
-        [ApplicationStep.ACCEPT_JOB]: [],
         [ApplicationStep.INTERVIEW]: [],
         [ApplicationStep.RANKING]: [],
         [ApplicationStep.FINALIST]: [],
@@ -121,11 +119,6 @@ const tabs = computed(() => [
         name: 'match_with_job',
         label: `Match (${applicationsByStep.value[ApplicationStep.MATCH_WITH_JOB].length})`,
         icon: 'person_search',
-    },
-    {
-        name: 'accept_job',
-        label: isMobile.value ? `Aceitaram (${applicationsByStep.value[ApplicationStep.ACCEPT_JOB].length})` : `Aceitaram (${applicationsByStep.value[ApplicationStep.ACCEPT_JOB].length})`,
-        icon: 'thumb_up',
     },
     {
         name: 'interview',
@@ -153,7 +146,6 @@ const pieChartData = computed(() => {
     // Define colors for each step
     const colors: Record<ApplicationStep, string> = {
         [ApplicationStep.MATCH_WITH_JOB]: '#2196F3',
-        [ApplicationStep.ACCEPT_JOB]: '#4CAF50',
         [ApplicationStep.INTERVIEW]: '#FF9800',
         [ApplicationStep.RANKING]: '#9C27B0',
         [ApplicationStep.FINALIST]: '#FFD700',
@@ -225,7 +217,6 @@ const funnelChartData = computed(() => {
     // Define funnel steps in order from top to bottom
     const funnelSteps = [
         { step: ApplicationStep.MATCH_WITH_JOB, label: 'Match com Vaga', color: '#2196F3' },
-        { step: ApplicationStep.ACCEPT_JOB, label: 'Aceitaram Vaga', color: '#4CAF50' },
         { step: ApplicationStep.INTERVIEW, label: 'Entrevista', color: '#FF9800' },
         { step: ApplicationStep.RANKING, label: 'Ranking', color: '#9C27B0' },
         { step: ApplicationStep.FINALIST, label: 'Finalistas', color: '#FFD700' },
@@ -1118,200 +1109,6 @@ onMounted(() => {
                     </div>
                 </q-tab-panel>
 
-                <!-- Accept Job Tab -->
-                <q-tab-panel
-                    name="accept_job"
-                    class="q-pa-md"
-                >
-                    <div v-if="applicationsByStep[ApplicationStep.ACCEPT_JOB].length > 0">
-                        <div class="q-gutter-sm bg-grey-1">
-                            <q-expansion-item
-                                v-for="application in applicationsByStep[ApplicationStep.ACCEPT_JOB]"
-                                :key="application.id"
-                                class="candidate-expansion-card"
-                                header-class="candidate-expansion-header"
-                            >
-                                <!-- Header - Always visible -->
-                                <template #header>
-                                    <q-item-section avatar>
-                                        <q-avatar>
-                                            <img :src="getCandidatePhoto(getConversationForApplication(application))">
-                                        </q-avatar>
-                                    </q-item-section>
-                                    <q-item-section>
-                                        <div class="row items-center justify-between full-width">
-                                            <q-item-label class="text-weight-bold text-body1">
-                                                {{ getCandidateName(getConversationForApplication(application)) }}
-                                            </q-item-label>
-                                            <div class="status-badge status-accept">
-                                                <q-icon
-                                                    name="thumb_up"
-                                                    size="14px"
-                                                    class="q-mr-xs"
-                                                />
-                                                {{ applicationStepLabels[application.currentStep] }}
-                                            </div>
-                                        </div>
-                                        <div class="row items-center justify-between full-width q-mt-xs">
-                                            <q-item-label
-                                                caption
-                                                class="text-grey-7"
-                                            >
-                                                {{ getCandidateLocation(getConversationForApplication(application)) }}
-                                            </q-item-label>
-                                            <div class="text-caption text-grey-8">
-                                                {{ formatDateTime(application.createdAt) }}
-                                            </div>
-                                        </div>
-                                        <div class="row items-center justify-between full-width q-mt-xs">
-                                            <q-item-label
-                                                caption
-                                                class="text-grey-6"
-                                            >
-                                                Salário esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
-                                            </q-item-label>
-                                        </div>
-                                    </q-item-section>
-                                </template>
-
-                                <!-- Expanded content -->
-                                <q-card
-                                    flat
-                                    class="expansion-content"
-                                >
-                                    <q-card-section class="q-pa-md">
-                                        <div class="row items-start">
-                                            <!-- Left side: Candidate Information -->
-                                            <div class="col q-pr-md">
-                                                <div class="q-gutter-xs">
-                                                    <div class="text-body2 text-grey-8 row items-center">
-                                                        <q-icon
-                                                            name="badge"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        ID da Candidatura: {{ application.id }}
-                                                    </div>
-
-                                                    <div class="text-body2 text-grey-8 row items-center">
-                                                        <q-icon
-                                                            name="person"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        Nome: {{ getCandidateName(getConversationForApplication(application)) }}
-                                                    </div>
-
-                                                    <div class="text-body2 text-grey-8 row items-center">
-                                                        <q-icon
-                                                            name="place"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        Localização: {{ getCandidateLocation(getConversationForApplication(application)) }}
-                                                    </div>
-
-                                                    <div class="text-body2 text-grey-8 row items-center">
-                                                        <q-icon
-                                                            name="attach_money"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        Salário Esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
-                                                    </div>
-
-                                                    <div class="text-body2 text-grey-8 row items-center">
-                                                        <q-icon
-                                                            name="work"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        Status de Emprego: {{ getCandidateEmploymentStatus(getConversationForApplication(application)) }}
-                                                    </div>
-
-                                                    <div class="text-body2 text-grey-8 row items-center">
-                                                        <q-icon
-                                                            name="account_circle"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        Status do Perfil: {{ getCandidateProfileStatus(getConversationForApplication(application)) }}
-                                                    </div>
-
-                                                    <div class="text-body2 text-grey-8 row items-center">
-                                                        <q-icon
-                                                            name="interests"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        Interesses: {{ getCandidateInterests(getConversationForApplication(application)) }}
-                                                    </div>
-
-                                                    <div
-                                                        v-if="getCandidateLinkedin(getConversationForApplication(application))"
-                                                        class="text-body2 text-grey-8 row items-center"
-                                                    >
-                                                        <q-icon
-                                                            name="link"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        LinkedIn:
-                                                        <a
-                                                            :href="getCandidateLinkedin(getConversationForApplication(application))"
-                                                            target="_blank"
-                                                            class="q-ml-xs text-primary"
-                                                        >
-                                                            Ver perfil
-                                                        </a>
-                                                    </div>
-
-                                                    <div class="text-body2 text-grey-8 row items-center">
-                                                        <q-icon
-                                                            name="event"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        Candidatura criada em: {{ formatDateTime(application.createdAt) }}
-                                                    </div>
-
-                                                    <div
-                                                        v-if="application.updatedAt && application.updatedAt !== application.createdAt"
-                                                        class="text-body2 text-grey-8 row items-center"
-                                                    >
-                                                        <q-icon
-                                                            name="update"
-                                                            size="13px"
-                                                            class="q-mr-xs text-grey-7"
-                                                        />
-                                                        Última atualização: {{ formatDateTime(application.updatedAt) }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </q-card-section>
-                                </q-card>
-                            </q-expansion-item>
-                        </div>
-                    </div>
-                    <div
-                        v-else
-                        class="text-center q-pa-xl"
-                    >
-                        <q-icon
-                            name="thumb_up"
-                            size="60px"
-                            color="grey-5"
-                        />
-                        <div class="text-h6 text-grey-7 q-mt-md">
-                            Nenhuma candidatura para aceitar
-                        </div>
-                        <div class="text-subtitle2 q-mt-sm text-grey-6">
-                            Candidatos que aceitaram a vaga aparecerão aqui
-                        </div>
-                    </div>
-                </q-tab-panel>
-
                 <!-- Interview Tab -->
                 <q-tab-panel
                     name="interview"
@@ -2036,11 +1833,6 @@ onMounted(() => {
 .status-match {
     background-color: #e3f2fd;
     color: #1976d2;
-}
-
-.status-accept {
-    background-color: #e8f5e8;
-    color: #2e7d32;
 }
 
 .status-interview {
