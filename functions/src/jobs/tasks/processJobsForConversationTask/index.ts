@@ -1,5 +1,6 @@
 import { Request } from 'firebase-functions/v2/tasks';
 import { logger } from 'firebase-functions';
+import OpenAI from 'openai';
 
 import { validateProcessJobsForConversationTaskData, ValidationError } from './types';
 
@@ -147,11 +148,80 @@ export default async function processJobsForConversationTask(context: Request): 
  * @returns Fit result with jobId and score, or null if below threshold
  */
 async function processJobForConversation(job: AdminBaseRef<Job>, conversation: AdminBaseRef<Conversation>): Promise<{ jobId: string; fitScore: number } | null> {
-    // Mock implementation - generate random score between 0 and 100
-    const fitScore = Math.floor(Math.random() * 100); // 0 to 100
+    const jobDescription = job.description;
+    const personDescription = conversation.relevantData?.description;
 
-    //TODO: IMPROVE THIS LOGIC AND CHANGE THRESHOLD
+    if (!jobDescription || !personDescription) {
+        return null;
+    }
+
+    const jobDescriptionEmbedding = await getMessageEmbeddings([jobDescription]);
+    const personDescriptionEmbedding = await getMessageEmbeddings([personDescription]);
+
+    const cosineSimilarity = calculateCosineSimilarity(jobDescriptionEmbedding[0]!, personDescriptionEmbedding[0]!);
+
+    const fitScore = cosineSimilarity;
 
     // Apply threshold filter and return the jobId and fitScore if above threshold
-    return fitScore >= 0 ? { jobId: job.id, fitScore } : null;
+    return fitScore >= 0.2 ? { jobId: job.id, fitScore } : null;
+}
+
+/**
+ * Gets the embeddings of the messages.
+ * @param messages - The messages of the conversation.
+ * @returns The embeddings of the messages.
+ */
+export async function getMessageEmbeddings(messages: string[]): Promise<(number[] | undefined)[]> {
+    const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
+    const embeddingsPromise = messages.map(async message => {
+        return openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: message,
+        });
+    });
+    const embeddings = await Promise.all(embeddingsPromise);
+    return embeddings.map(embedding => embedding.data[0]?.embedding);
+}
+
+/**
+ * Calcula a similaridade de cosseno entre dois vetores de embedding.
+ * @param vectorA - Primeiro vetor de embedding.
+ * @param vectorB - Segundo vetor de embedding.
+ * @returns Valor da similaridade de cosseno entre 0 e 1.
+ */
+function calculateCosineSimilarity(vectorA: number[], vectorB: number[]): number {
+    if (vectorA.length !== vectorB.length) {
+        throw new Error('Vectors must have the same length');
+    }
+
+    // Calcula o produto escalar
+    let dotProduct = 0;
+    let magnitudeA = 0;
+    let magnitudeB = 0;
+
+    for (let i = 0; i < vectorA.length; i++) {
+        const valueA = vectorA[i];
+        const valueB = vectorB[i];
+
+        // Verifica se os valores não são undefined
+        if (valueA !== undefined && valueB !== undefined) {
+            dotProduct += valueA * valueB;
+            magnitudeA += valueA * valueA;
+            magnitudeB += valueB * valueB;
+        }
+    }
+
+    // Calcula as magnitudes
+    magnitudeA = Math.sqrt(magnitudeA);
+    magnitudeB = Math.sqrt(magnitudeB);
+
+    // Evita divisão por zero
+    if (magnitudeA === 0 || magnitudeB === 0) {
+        return 0;
+    }
+
+    // Retorna a similaridade de cosseno
+    return dotProduct / (magnitudeA * magnitudeB);
 }
