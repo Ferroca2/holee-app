@@ -18,9 +18,11 @@ import baseButton from 'components/ui/base-button.vue';
 import baseSelect from 'components/ui/base-select.vue';
 import JobRepository from '../domain/jobs/repository';
 import ConversationRepository from '../domain/conversations/repository';
+import ApplicationRepository from '../domain/applications/repository';
 import { BaseRef } from '../domain';
 import { Job } from '../domain/jobs/entity';
 import { Conversation as ConversationEntity } from '../domain/conversations/entity';
+import { Application } from '../domain/applications/entity';
 
 const $q = useQuasar();
 const error = useError();
@@ -50,6 +52,12 @@ const analyser = ref<AnalyserNode | null>(null);
 const dataArray = ref<Uint8Array | null>(null);
 const audioLevel = ref(0);
 
+// Remove old state variables as they're no longer needed
+
+// Add application state
+const application = ref<BaseRef<Application> | null>(null);
+const loadingApplication = ref(false);
+
 // Replace with your actual agent ID from ElevenLabs
 const AGENT_ID = 'agent_01k013wrazfjvsc9q92va4atvm';
 
@@ -61,8 +69,13 @@ const canStartInterview = computed(() => {
     console.log('Selected candidate:', selectedCandidate.value);
     console.log('Is connecting:', isConnecting.value);
     console.log('Is connected:', isConnected.value);
+    console.log('Loading application:', loadingApplication.value);
 
-    return selectedJob.value && selectedCandidate.value && !isConnecting.value && !isConnected.value;
+    return selectedJob.value &&
+           selectedCandidate.value &&
+           !isConnecting.value &&
+           !isConnected.value &&
+           !loadingApplication.value;
 });
 
 // Load jobs and candidates
@@ -94,6 +107,29 @@ const loadCandidates = async () => {
     }
 };
 
+// Remove old API functions - now using application data directly
+
+// Add function to load application data
+const loadApplication = async () => {
+    if (!selectedJob.value || !selectedCandidate.value) {
+        application.value = null;
+        return;
+    }
+
+    try {
+        loadingApplication.value = true;
+        application.value = await ApplicationRepository.getApplicationsByJobAndConversation(
+            selectedJob.value.id,
+            selectedCandidate.value.id
+        );
+    } catch (err) {
+        console.error('Error loading application:', err);
+        application.value = null;
+    } finally {
+        loadingApplication.value = false;
+    }
+};
+
 // Build dynamic variables for the agent
 const buildDynamicVariables = () => {
     if (!selectedJob.value || !selectedCandidate.value || !storesStore.currentStore) {
@@ -109,6 +145,11 @@ const buildDynamicVariables = () => {
         return condition ? value : '';
     };
 
+    // Get script and checklist from application
+    const script = application.value?.interviewData?.script || '';
+    const checklist = application.value?.interviewData?.checklist ?
+        application.value.interviewData.checklist.map(item => item.text).join(', ') : '';
+
     const variables = {
         // Required variables
         agentName: 'Assistente de Recrutamento',
@@ -117,6 +158,7 @@ const buildDynamicVariables = () => {
         // Job information
         companyName: store.name || 'Empresa',
         title: job.title || '',
+        jobId: job.id,
         seniorityLevel: job.seniorityLevel || '',
         location: job.location || '',
         workMode: job.workMode || '',
@@ -133,27 +175,36 @@ const buildDynamicVariables = () => {
         salaryRangemax: job.salaryRange?.max?.toString() || '',
 
         // Candidate information
+        candidateId: candidate.id,
         candidateName: candidate.relevantData?.name || candidate.name || '',
+        candidateFullName: candidate.relevantData?.name || candidate.name || '',
         candidateRegion: candidate.relevantData?.address || '',
         candidateExpectedSalary: candidate.relevantData?.expectedSalary?.toString() || '',
         candidateEmploymentStatus: candidate.employed ? 'Empregado' : 'Desempregado',
         candidateInterests: Array.isArray(candidate.relevantData?.interests) ? candidate.relevantData.interests.join(', ') : '',
         candidateLinkedIn: candidate.relevantData?.linkedin || '',
 
+        // Application interview data
+        script: script,
+        checklist: checklist,
+
         // Conditional variables (if_xxx)
-        if_salaryRange: createConditional(Boolean(job.salaryRange?.min && job.salaryRange?.max)),
-        if_candidateName: createConditional(Boolean(candidate.relevantData?.name || candidate.name)),
-        if_niceToHaveSkills: createConditional(Boolean(job.niceToHaveSkills && job.niceToHaveSkills.length > 0)),
-        if_languagesRequired: createConditional(Boolean(job.languagesRequired && job.languagesRequired.length > 0)),
-        if_candidateInterests: createConditional(Boolean(candidate.relevantData?.interests && candidate.relevantData.interests.length > 0)),
-        if_candidateRegion: createConditional(Boolean(candidate.relevantData?.address)),
-        if_location: createConditional(Boolean(job.location)),
-        if_workMode: createConditional(Boolean(job.workMode)),
-        if_minExperienceYears: createConditional(Boolean(job.minExperienceYears && job.minExperienceYears > 0)),
-        if_candidateEmployed: createConditional(Boolean(candidate.employed)),
-        if_candidateExpectedSalary: createConditional(Boolean(candidate.relevantData?.expectedSalary)),
-        if_numberOfPositions: createConditional(Boolean(job.numberOfPositions && job.numberOfPositions > 1)),
-        if_seniorityLevel: createConditional(Boolean(job.seniorityLevel)),
+        'if_salaryRange': createConditional(Boolean(job.salaryRange?.min && job.salaryRange?.max)),
+        'if_candidateName': createConditional(Boolean(candidate.relevantData?.name || candidate.name)),
+        'if_candidateFullName': createConditional(Boolean(candidate.relevantData?.name || candidate.name)),
+        'if_niceToHaveSkills': createConditional(Boolean(job.niceToHaveSkills && job.niceToHaveSkills.length > 0)),
+        'if_languagesRequired': createConditional(Boolean(job.languagesRequired && job.languagesRequired.length > 0)),
+        'if_candidateInterests': createConditional(Boolean(candidate.relevantData?.interests && candidate.relevantData.interests.length > 0)),
+        'if_candidateRegion': createConditional(Boolean(candidate.relevantData?.address)),
+        'if_location': createConditional(Boolean(job.location)),
+        'if_workMode': createConditional(Boolean(job.workMode)),
+        'if_minExperienceYears': createConditional(Boolean(job.minExperienceYears && job.minExperienceYears > 0)),
+        'if_candidateEmployed': createConditional(Boolean(candidate.employed)),
+        'if_candidateExpectedSalary': createConditional(Boolean(candidate.relevantData?.expectedSalary)),
+        'if_numberOfPositions': createConditional(Boolean(job.numberOfPositions && job.numberOfPositions > 1)),
+        'if_seniorityLevel': createConditional(Boolean(job.seniorityLevel)),
+        'if_script': createConditional(Boolean(script)),
+        'if_checklist': createConditional(Boolean(checklist)),
     };
 
     return variables;
@@ -353,6 +404,9 @@ const startConversation = async () => {
         // Start audio visualization first
         await startAudioVisualization();
 
+        // Load application data for script and checklist
+        await loadApplication();
+
         // Build dynamic variables
         const dynamicVariables = buildDynamicVariables();
 
@@ -362,6 +416,7 @@ const startConversation = async () => {
         conversation.value = await Conversation.startSession({
             agentId: AGENT_ID,
             dynamicVariables,
+            userId: `${selectedJob.value?.id}_${selectedCandidate.value?.id}`,
             onConnect: () => {
                 connectionStatus.value = 'connected';
                 isConnected.value = true;
@@ -498,12 +553,16 @@ const onJobChange = (jobId: string) => {
     selectedJobId.value = jobId;
     const job = jobs.value.find(j => j.id === jobId);
     selectedJob.value = job || null;
+    // Load application data when job changes
+    loadApplication();
 };
 
 const onCandidateChange = (candidateId: string) => {
     selectedCandidateId.value = candidateId;
     const candidate = candidates.value.find(c => c.id === candidateId);
     selectedCandidate.value = candidate || null;
+    // Load application data when candidate changes
+    loadApplication();
 };
 </script>
 
@@ -529,7 +588,7 @@ const onCandidateChange = (candidateId: string) => {
             </div>
 
             <!-- Selection Cards -->
-            <div class="row q-gutter-md full-width">
+            <div class="row q-gutter-md full-width justify-center items-center">
                 <div class="col-12 col-md-6">
                     <q-card class="full-height">
                         <q-card-section>

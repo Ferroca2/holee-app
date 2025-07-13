@@ -16,9 +16,10 @@ node_modules/
 *.local
 *.env
 .env.*
-
+db/holee-app-firebase-adminsdk-fbsvc-6734396774.json
 .env
 lib/
+
 node_modules/
 
 # Logs

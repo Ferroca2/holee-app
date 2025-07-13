@@ -55,6 +55,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/voice-agent/**",
+        "function": "webService-voiceAgent"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

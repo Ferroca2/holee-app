@@ -15,7 +15,7 @@ const path = require('path');
 module.exports = configure(function (ctx) {
     const HOSTNAME = (() => {
         if (ctx.prod)
-            return process.env.GCLOUD_PROJECT === 'dionisio-crm-dev' ? 'https://dionisio-crm-dev.web.app' : 'https://dionisio-crm.web.app';
+            return 'https://holee-app.web.app';
 
         const nets = require('os').networkInterfaces();
 
