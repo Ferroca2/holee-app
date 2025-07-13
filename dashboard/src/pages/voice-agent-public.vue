@@ -49,7 +49,7 @@ const dataArray = ref<Uint8Array | null>(null);
 const audioLevel = ref(0);
 
 // Replace with your actual agent ID from ElevenLabs
-const AGENT_ID = 'agent_01k002cjj1edjage0m0gzfvg35';
+const AGENT_ID = 'agent_01k013wrazfjvsc9q92va4atvm';
 
 const connectionStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected');
 
