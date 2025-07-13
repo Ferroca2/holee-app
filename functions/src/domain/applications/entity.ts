@@ -10,12 +10,20 @@ export enum ApplicationStep {
     FINALIST = 'finalist',                        // 4) Ser finalista (Foi ranqueado bem em relação ao número de vagas)
 }
 
+export interface InterviewData {
+    checklist: string[];                          // Lista de itens a serem verificados (pré-entrevista)
+    roteiro: string;                              // Roteiro/script da entrevista (pré-entrevista)
+    anotacoes?: string;                           // Anotações preenchidas durante/após a entrevista
+}
+
 export interface Application {
     jobId: string;                            // ID da vaga
     conversationId: string;                   // ID da conversa (candidato)
 
     status: ApplicationStatus;                // Status geral da aplicação
     currentStep: ApplicationStep;             // Step atual no processo
+
+    interviewData?: InterviewData;            // Dados da entrevista (pré + pós)
 
     createdAt: number;                        // Data de criação (epoch ms)
     updatedAt?: number;                       // Data de atualização (epoch ms)

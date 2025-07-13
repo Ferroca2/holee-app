@@ -6,7 +6,7 @@ import { validateOptInApplicationTaskData, ValidationError } from './types';
 import { ZApiServiceSDK } from '../../../wpp/zapi/service';
 import { MessagePayload } from '../../../core/messaging';
 
-import { ApplicationStep } from '../../../domain/applications/entity';
+import { ApplicationStep, ApplicationStatus } from '../../../domain/applications/entity';
 import ApplicationsRepository from '../../../domain/applications/repository';
 import ConversationsRepository from '../../../domain/conversations/repository';
 import JobsRepository from '../../../domain/jobs/repository';
@@ -62,13 +62,19 @@ export default async function optInApplicationTask(context: Request): Promise<vo
             return;
         }
 
-        // 4. Validate current step - should be MATCH_WITH_JOB
+        // 4. Validate application status - should be IN_PROGRESS
+        if (existingApplication.status !== ApplicationStatus.IN_PROGRESS) {
+            logger.warn(`[${conversationId}] Application ${existingApplication.id} is not in IN_PROGRESS status (current: ${existingApplication.status})`);
+            return;
+        }
+
+        // 5. Validate current step - should be MATCH_WITH_JOB
         if (existingApplication.currentStep !== ApplicationStep.MATCH_WITH_JOB) {
             logger.warn(`[${conversationId}] Application ${existingApplication.id} is not in MATCH_WITH_JOB step (current: ${existingApplication.currentStep})`);
             return;
         }
 
-        // 5. Update application to next step: INTERVIEW
+        // 6. Update application to next step: INTERVIEW
         const now = Date.now();
         await ApplicationsRepository.updateApplication(existingApplication.id, {
             currentStep: ApplicationStep.INTERVIEW,
@@ -77,9 +83,9 @@ export default async function optInApplicationTask(context: Request): Promise<vo
 
         logger.info(`[${conversationId}] Successfully updated application ${existingApplication.id} to INTERVIEW step for job ${jobId}`);
 
-        //TODO: update Application with interview parameterss
+        //TODO: update Application with interview data
 
-        // 6. Send interview confirmation message
+        // 7. Send interview confirmation message
         const zApiService = await ZApiServiceSDK.initialize();
 
         // Format the job end date
