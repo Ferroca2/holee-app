@@ -121,7 +121,7 @@ export class JobsRepositoryServerSDK implements JobsRepositoryI {
         try {
             const now = Date.now();
             const snapshot = await this.getCollection()
-                .where('status', '==', 'OPEN')
+                .where('status', '==', 'open')
                 .where('applyStart', '<=', now)
                 .where('applyEnd', '>=', now)
                 .orderBy('applyStart', 'asc')

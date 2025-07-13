@@ -47,6 +47,7 @@ export default async function processJobsForConversationTask(context: Request): 
 
         // 2. Fetch the jobs for the conversation
         const jobs = await JobsRepository.getCurrentOpenJobs();
+        logger.info(`[${conversationId}] Found ${jobs.length} jobs: ${jobs.map(job => job.id).join(', ')}`);
 
         // 3. Get existing fitResults to avoid reprocessing
         const existingFitResults = conversation.fitResults ?? [];
@@ -148,8 +149,8 @@ async function processJobForConversation(job: AdminBaseRef<Job>, conversation: A
     // Mock implementation - generate random score between 0 and 100
     const fitScore = Math.floor(Math.random() * 100); // 0 to 100
 
-    //TODO: IMPROVE THIS LOGIC
+    //TODO: IMPROVE THIS LOGIC AND CHANGE THRESHOLD
 
     // Apply threshold filter and return the jobId and fitScore if above threshold
-    return fitScore >= 50 ? { jobId: job.id, fitScore } : null;
+    return fitScore >= 0 ? { jobId: job.id, fitScore } : null;
 }

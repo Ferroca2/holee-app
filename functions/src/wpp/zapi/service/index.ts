@@ -114,7 +114,7 @@ export class ZApiServiceSDK implements ZApiServiceI {
     * @param instanceToken - The token for the ZApiInstance.
     * @returns A fully initialized ZApiServiceSDK.
     */
-    static async initialize(instanceId: string = process.env.INSTANCE_ID!, instanceToken: string = process.env.INSTANCE_TOKEN!): Promise<ZApiServiceSDK> {
+    static async initialize(instanceId: string = process.env.ZAPI_INSTANCE_ID!, instanceToken: string = process.env.ZAPI_INSTANCE_TOKEN!): Promise<ZApiServiceSDK> {
         try {
             if (!instanceToken) {
                 throw new Error(`Token is required for instance ID: ${instanceId}`);
