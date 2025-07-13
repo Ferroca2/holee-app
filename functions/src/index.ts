@@ -41,6 +41,16 @@ export const onMessageReceiveWebhook = onRequest(
         .then(async m => { await m.default(...args); })
 );
 
+/* ElevenLabs */
+
+export const onPostCallWebhook = onRequest(
+    {
+        cors: true,
+    },
+    (...args) => import('./elevenLabs/webhooks/onPostCallWebhook')
+        .then(async m => { await m.default(...args); })
+);
+
 /* Jobs */
 
 export const processJobsForConversationTask = onTaskDispatched(

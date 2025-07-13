@@ -20,6 +20,7 @@ export interface ApplicationsRepositoryI {
     getApplicationById(applicationId: string): Promise<AdminBaseRef<Application> | null>;
     getApplicationsByStepAndStatus(step: ApplicationStep, status: ApplicationStatus): Promise<AdminBaseRef<Application>[]>;
     getApplicationByJobAndConversation(jobId: string, conversationId: string): Promise<AdminBaseRef<Application> | null>;
+    getApplicationsByJobId(jobId: string): Promise<AdminBaseRef<Application>[]>;
 }
 
 /**
@@ -155,6 +156,26 @@ export class ApplicationsRepositoryServerSDK implements ApplicationsRepositoryI 
             return convertDoc(doc);
         } catch (error) {
             throw new Error(`Erro ao buscar Application com jobId ${jobId} e conversationId ${conversationId}: ${error}`);
+        }
+    }
+
+    /**
+     * Busca Applications por jobId.
+     * @param jobId - O ID do job.
+     * @returns Array de Applications associadas ao jobId.
+     * @throws Error se a operação de busca falhar.
+     */
+    async getApplicationsByJobId(jobId: string): Promise<AdminBaseRef<Application>[]> {
+        try {
+            const snapshot = await this.getCollection()
+                .where('jobId', '==', jobId)
+                .get();
+
+            if (snapshot.empty || snapshot.docs.length === 0) return [];
+
+            return snapshot.docs.map(doc => convertDoc(doc));
+        } catch (error) {
+            throw new Error(`Erro ao buscar Applications com jobId ${jobId}: ${error}`);
         }
     }
 }
