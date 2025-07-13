@@ -7,6 +7,7 @@ import { JobStatus } from '../../../domain/jobs/entity';
 import { ApplicationStatus, ApplicationStep } from '../../../domain/applications/entity';
 import JobsRepository from '../../../domain/jobs/repository';
 import ApplicationsRepository from '../../../domain/applications/repository';
+import { swissArmyCompare } from '@/ai/utils';
 
 /**
  * Cloud Task function to rank applications for a specific job
@@ -112,11 +113,27 @@ export default async function rankApplicationsTask(context: Request): Promise<vo
 
         logger.info(`[${jobId}] Processing completed. ${validCandidates.length} candidates ready for ranking`);
 
-        // TODO: Implement ranking logic with agents
-        // The validCandidates array contains all applications that:
-        // - Were in INTERVIEW step with IN_PROGRESS status
-        // - Have completed their interview (interviewData with notes)
-        // - Are ready to be ranked by the AI agent system
+        // 7. Rank candidates
+        const ranking = await swissArmyCompare(validCandidates.map(candidate => candidate.id), job.description);
+        await JobsRepository.updateJob(jobId, {
+            finalRanking: ranking,
+        });
+
+        // 8. Update applications to RANKING
+        const updateRankingPromises = ranking.map(async (candidateId) => {
+            await ApplicationsRepository.updateApplication(candidateId, {
+                currentStep: ApplicationStep.RANKING,
+                updatedAt: Date.now(),
+            });
+        });
+
+        // 9. Update the 3*num_positions candidates to FINALIST
+        const updateFinalistPromises = ranking.slice(0, job.numberOfPositions * 3).map(async (candidateId) => {
+            await ApplicationsRepository.updateApplication(candidateId, {
+                currentStep: ApplicationStep.FINALIST,
+                updatedAt: Date.now(),
+            });
+        });
 
         logger.info(`[${jobId}] RankApplicationsTask completed successfully. ${validCandidates.length} candidates ready for ranking`);
 
