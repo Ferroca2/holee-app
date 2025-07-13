@@ -214,7 +214,7 @@ const onBack = () => {
 </script>
 
 <template>
-    <q-page :class="pageClasses">
+    <q-page class="row justify-center">
         <div
             class="full-width q-mx-auto text-left"
             style="max-width: 600px"

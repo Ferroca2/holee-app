@@ -77,7 +77,7 @@ export const useSessionStore = defineStore('session', () => {
         async login({ email, password }: LoginOptions) {
             await signInWithEmailAndPassword(getAuth(), email, password);
 
-            await router.replace('/home/reports/conversations');
+            await router.replace('/dashboard');
         },
         async register(options: RegisterOptions) {
             const { user } = await createUserWithEmailAndPassword(
