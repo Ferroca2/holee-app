@@ -3,6 +3,7 @@ import { AgentInputItem } from "@openai/agents";
 import { ChatCompletionMessageParam } from "openai/resources";
 import { ChatCompletionContentPart } from "openai/resources";
 import FirecrawlApp, { ScrapeResponse } from '@mendable/firecrawl-js';
+import { CarouselPayload } from "../core/messaging/schemas/carousel.schema";
 
 
 export const getCrawlResult = async (url: string) => {
@@ -143,6 +144,21 @@ export async function buildOpenAiContext(
                 messageContent = `Mensagem automática do sistema: ${message.messagePayload.text}`;
             } else if (message.messagePayload.type === 'document') {
                 messageContent = await getCrawlResult(message.messagePayload.documentUrl || '') || 'Documento sem descrição.';
+            } else if (message.messagePayload.type === 'carousel') {
+                // Constrói representação textual do carousel
+                let carouselText = message.messagePayload.text;
+
+                if (message.messagePayload.cards && message.messagePayload.cards.length > 0) {
+                    carouselText += '\n\n📋 Opções do Carousel:';
+
+                    message.messagePayload.cards.forEach((card, index) => {
+                        const cardNumber = index + 1;
+                        const cardText = card.text || `Card ${cardNumber}`;
+                        carouselText += `\n${cardNumber}. ${cardText}`;
+                    });
+                }
+
+                messageContent = carouselText;
             }
 
             return {
