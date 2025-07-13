@@ -495,7 +495,7 @@ export class ZApiServiceSDK implements ZApiServiceI {
                         messageId: options?.messageId,
                     }, payload.extension);
 
-                // TODO: Implement other message types (link, poll) here as they are supported
+                    //TODO: add case for video
 
                 case 'carousel':
                     // Send carousel message

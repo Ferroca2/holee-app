@@ -5,8 +5,10 @@ import { FirestoreEvent, Change } from 'firebase-functions/v2/firestore';
 
 import { Conversation } from '../../domain/conversations/entity';
 import { ProcessJobsForConversationTaskData } from '../../jobs/tasks/processJobsForConversationTask/types';
+import { OptInApplicationTaskData } from '../../jobs/tasks/optInApplicationTask/types';
 
 const processJobsForConversationTaskQueue = getFunctions().taskQueue('processJobsForConversationTask');
+const optInApplicationTaskQueue = getFunctions().taskQueue('optInApplicationTask');
 
 /**
  * Handler triggered when a conversation is written.
@@ -44,14 +46,35 @@ export default async function onConversationWrite(
         const currentProfileCompleted = after?.get('profileCompleted') as Conversation['profileCompleted'] | undefined;
         const previousProfileCompleted = before?.get('profileCompleted') as Conversation['profileCompleted'] | undefined;
         const currentEmployed = after?.get('employed') as Conversation['employed'] | undefined;
+        const currentJobIds = after?.get('currentJobIds') as Conversation['currentJobIds'] | undefined;
+        const previousJobIds = before?.get('currentJobIds') as Conversation['currentJobIds'] | undefined;
 
         switch (changeType) {
             case 'create': {
+                // Check if new conversation has currentJobIds
+                if (currentJobIds && currentJobIds.length > 0) {
+                    // For new conversations, all jobIds are considered "new"
+                    const taskPromises = currentJobIds.map(async jobId => {
+                        const taskData: OptInApplicationTaskData = {
+                            conversationId,
+                            jobId,
+                        };
+
+                        await optInApplicationTaskQueue.enqueue(
+                            taskData,
+                            { scheduleTime: new Date() }
+                        );
+
+                        logger.info(`[${conversationId}] Enqueued optInApplicationTask for job ${jobId} (new conversation)`);
+                    });
+
+                    await Promise.all(taskPromises);
+                }
 
                 break;
             }
             case 'update': {
-
+                // Check for profileCompleted trigger
                 if (
                     currentRole === 'USER' &&
                     currentProfileCompleted &&
@@ -70,6 +93,30 @@ export default async function onConversationWrite(
                     );
 
                     logger.info(`[${conversationId}] Conversation enqueued for processing`);
+                }
+
+                // Check for currentJobIds changes using Set for efficient lookup
+                if (currentJobIds && currentJobIds.length > 0) {
+                    const previousJobIdsSet = new Set(previousJobIds || []);
+                    const newJobIds = currentJobIds.filter(jobId => !previousJobIdsSet.has(jobId));
+
+                    if (newJobIds.length > 0) {
+                        const taskPromises = newJobIds.map(async jobId => {
+                            const taskData: OptInApplicationTaskData = {
+                                conversationId,
+                                jobId,
+                            };
+
+                            await optInApplicationTaskQueue.enqueue(
+                                taskData,
+                                { scheduleTime: new Date() }
+                            );
+
+                            logger.info(`[${conversationId}] Enqueued optInApplicationTask for job ${jobId} (opt-in detected)`);
+                        });
+
+                        await Promise.all(taskPromises);
+                    }
                 }
 
                 break;
