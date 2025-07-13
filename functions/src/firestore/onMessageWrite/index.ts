@@ -61,7 +61,6 @@ export default async function onMessageWrite(
                 // Skip AI processing for opt-in messages
                 if (currentIsOptInMessage === true) {
                     logger.info(`[${conversationId}] Skipping AI processing for opt-in message: ${messageId}`);
-                    //TODO: enqueue a task to set application for job
                     return;
                 }
 

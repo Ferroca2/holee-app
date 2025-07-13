@@ -1,5 +1,5 @@
 import { logger } from 'firebase-functions';
-import { getFirestore } from 'firebase-admin/firestore';
+import { Request } from 'firebase-functions/v2/tasks';
 
 import { SetApplicationTaskData, validateSetApplicationTaskData } from './types';
 import { ApplicationsRepositoryServerSDK } from '../../../domain/applications/repository';
@@ -9,16 +9,29 @@ import { Application, ApplicationStatus, ApplicationStep } from '../../../domain
  * Creates a new application for a conversation and job.
  * This is called when a new fit result is detected.
  */
-export default async function setApplicationTask(data: unknown) {
-    logger.info('Starting setApplicationTask with data:', data);
-
-    // Validate input data
-    const validatedData: SetApplicationTaskData = validateSetApplicationTaskData(data);
-    const { conversationId, jobId } = validatedData;
-
-    logger.info(`[${conversationId}] Starting setApplicationTask for job ${jobId}`);
+export default async function setApplicationTask(context: Request): Promise<void> {
+    let conversationId: string | undefined;
+    let jobId: string | undefined;
 
     try {
+        // Convert scheduledTime from seconds to milliseconds with simple conversion
+        const executionTimestamp = Number(context.scheduledTime) * 1000;
+        if (isNaN(executionTimestamp)) {
+            throw new Error(`Invalid scheduledTime format: ${context.scheduledTime}`);
+        }
+
+        // Access the data from the Request context
+        const data: unknown = context.data;
+
+        logger.info('Starting setApplicationTask with data:', data);
+
+        // Validate input data
+        const validatedData: SetApplicationTaskData = validateSetApplicationTaskData(data);
+        conversationId = validatedData.conversationId;
+        jobId = validatedData.jobId;
+
+        logger.info(`[${conversationId}] Starting setApplicationTask for job ${jobId}`);
+
         const applicationsRepository = new ApplicationsRepositoryServerSDK();
 
         // Check if application already exists
@@ -44,7 +57,10 @@ export default async function setApplicationTask(data: unknown) {
         logger.info(`[${conversationId}] Created new application ${applicationDoc.id} for job ${jobId} in step MATCH_WITH_JOB`);
 
     } catch (error) {
-        logger.error(`[${conversationId}] Error in setApplicationTask for job ${jobId}:`, error);
+        // For other errors, log with conversationId and jobId if available
+        const currentConversationId = conversationId || 'unknown';
+        const currentJobId = jobId || 'unknown';
+        logger.error(`[${currentConversationId}] Error in setApplicationTask for job ${currentJobId}:`, error);
         throw error;
     }
 }

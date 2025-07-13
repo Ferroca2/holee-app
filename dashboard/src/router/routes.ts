@@ -8,9 +8,9 @@ const routes: RouteRecordRaw[] = [
     },
 
     {
-        path: '/voice-agent-public',
+        path: '/voice-agent-public/:jobId/:candidateId',
         component: () => import('layouts/login-layout.vue'),
-        children: [{ path: '', component: () => import('pages/voice-agent.vue') }],
+        children: [{ path: '', component: () => import('pages/voice-agent-public.vue') }],
     },
 
     {

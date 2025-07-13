@@ -71,7 +71,7 @@ export const setApplicationTask = onTaskDispatched(
             maxConcurrentDispatches: 1000,
         },
     },
-    req => import('./jobs/tasks/setApplicationTask').then(m => m.default(req.data))
+    req => import('./jobs/tasks/setApplicationTask').then(m => m.default(req))
 );
 
 export const optInApplicationTask = onTaskDispatched(
@@ -86,7 +86,7 @@ export const optInApplicationTask = onTaskDispatched(
             maxConcurrentDispatches: 1000,
         },
     },
-    req => import('./jobs/tasks/optInApplicationTask').then(m => m.default(req.data))
+    req => import('./jobs/tasks/optInApplicationTask').then(m => m.default(req))
 );
 
 /* AI Service */
@@ -95,4 +95,4 @@ export * as firestore from './firestore';
 
 export * as pubsub from './pubsub';
 
-// export * as webService from './webService';
+export * as webService from './webService';

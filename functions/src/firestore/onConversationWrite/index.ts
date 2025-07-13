@@ -55,9 +55,9 @@ export default async function onConversationWrite(
 
         switch (changeType) {
             case 'create': {
-                // Check if new conversation has currentJobIds
+                // Check if new conversation has currentJobIds (opt-ins)
                 if (currentJobIds && currentJobIds.length > 0) {
-                    // For new conversations, all jobIds are considered "new"
+                    // For new conversations, all jobIds are considered "new" opt-ins
                     const taskPromises = currentJobIds.map(async jobId => {
                         const taskData: OptInApplicationTaskData = {
                             conversationId,
@@ -75,9 +75,9 @@ export default async function onConversationWrite(
                     await Promise.all(taskPromises);
                 }
 
-                // Check if new conversation has fitResults
+                // Check if new conversation has fitResults (new matches)
                 if (currentFitResults && currentFitResults.length > 0) {
-                    // For new conversations, all fitResults are considered "new"
+                    // For new conversations, all fitResults are considered "new" matches
                     const taskPromises = currentFitResults.map(async fitResult => {
                         const taskData: SetApplicationTaskData = {
                             conversationId,
@@ -119,7 +119,7 @@ export default async function onConversationWrite(
                     logger.info(`[${conversationId}] Conversation enqueued for processing`);
                 }
 
-                // Check for currentJobIds changes using Set for efficient lookup
+                // Check for currentJobIds changes (new opt-ins)
                 if (currentJobIds && currentJobIds.length > 0) {
                     const previousJobIdsSet = new Set(previousJobIds || []);
                     const newJobIds = currentJobIds.filter(jobId => !previousJobIdsSet.has(jobId));
@@ -143,12 +143,11 @@ export default async function onConversationWrite(
                     }
                 }
 
-                // Check for fitResults changes using Set for efficient lookup
+                // Check for fitResults changes (new matches)
                 if (currentFitResults && currentFitResults.length > 0) {
                     const previousFitResultsSet = new Set(
                         (previousFitResults || []).map(fitResult => fitResult.jobId)
                     );
-
                     const newFitResults = currentFitResults.filter(
                         fitResult => !previousFitResultsSet.has(fitResult.jobId)
                     );
