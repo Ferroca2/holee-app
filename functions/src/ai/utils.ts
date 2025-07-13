@@ -1,100 +1,16 @@
 import { Message } from "../domain/messages/entity";
-import { AgentInputItem } from "@openai/agents";
 import { ChatCompletionMessageParam } from "openai/resources";
 import { ChatCompletionContentPart } from "openai/resources";
 import FirecrawlApp, { ScrapeResponse } from '@mendable/firecrawl-js';
-import { CarouselPayload } from "../core/messaging/schemas/carousel.schema";
+import conversationsRepository from "../domain/conversations/repository";
+import OpenAI from 'openai';
 
 
 export const getCrawlResult = async (url: string) => {
+    // TODO: add the api key to the environment variables
     const app = new FirecrawlApp({ apiKey: "fc-2412664d6e8c426fb13ee3428ebf20de" });
     const scrapeResult = await app.scrapeUrl(url, { formats: ['markdown'] }) as ScrapeResponse;
     return scrapeResult.markdown;
-}
-
-/**
- * Converte um link de PDF para base64 para uso com a API do OpenAI.
- *
- * @param pdfUrl - URL do PDF a ser convertido
- * @returns Promise<string> - String base64 do PDF
- * @throws Error se não conseguir baixar ou converter o PDF
- */
-export async function convertPdfLinkToBase64(pdfUrl: string): Promise<string> {
-    try {
-        // Baixa o PDF do link
-        const response = await fetch(pdfUrl);
-
-        if (!response.ok) {
-            throw new Error(`Erro ao baixar PDF: ${response.status} ${response.statusText}`);
-        }
-
-        // Verifica se o content-type é realmente um PDF
-        const contentType = response.headers.get('content-type');
-        if (contentType && !contentType.includes('application/pdf')) {
-            console.warn(`Aviso: Content-Type não é PDF: ${contentType}`);
-        }
-
-        // Converte para ArrayBuffer
-        const arrayBuffer = await response.arrayBuffer();
-
-        // Converte para Buffer (Node.js)
-        const buffer = Buffer.from(arrayBuffer);
-
-        // Converte para base64
-        const base64String = buffer.toString('base64');
-
-        return base64String;
-    } catch (error) {
-        console.error('Erro ao converter PDF para base64:', error);
-        throw new Error(`Falha ao converter PDF para base64: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-    }
-}
-
-/**
- * Converte um link de PDF para o formato esperado pela API do OpenAI Vision.
- *
- * @param pdfUrl - URL do PDF a ser convertido
- * @returns Promise<object> - Objeto formatado para a API do OpenAI
- */
-export async function convertPdfLinkForOpenAI(pdfUrl: string, filename?: string): Promise<{
-    type: "input_file";
-    file: string;
-    providerData: {
-        filename: string;
-    };
-}> {
-    try {
-        const base64String = await convertPdfLinkToBase64(pdfUrl);
-
-        return {
-            type: "input_file",
-            file: `data:application/pdf;base64,${base64String}`,
-            providerData: {
-                filename: filename || 'curriculum.pdf'
-            }
-        };
-    } catch (error) {
-        console.error('Erro ao converter PDF para formato OpenAI:', error);
-        throw error;
-    }
-}
-
-/**
- * Verifica se uma URL é um PDF válido.
- *
- * @param url - URL a ser verificada
- * @returns Promise<boolean> - true se for um PDF válido
- */
-export async function isPdfUrl(url: string): Promise<boolean> {
-    try {
-        const response = await fetch(url, { method: 'HEAD' });
-        if (!response.ok) return false;
-
-        const contentType = response.headers.get('content-type');
-        return contentType?.includes('application/pdf') || url.toLowerCase().endsWith('.pdf');
-    } catch {
-        return false;
-    }
 }
 
 /**
@@ -198,7 +114,11 @@ export async function buildOpenAiContext(
     return groupedMessages;
 }
 
-
+/**
+ * Parses the reasoning response from the OpenAI API.
+ * @param response - The response from the OpenAI API.
+ * @returns The parsed response.
+ */
 export function parseResoningResponse(response: {
     reasoning: string;
     response: string;
@@ -209,4 +129,80 @@ ${response.reasoning}
 </reasoning>
 ${response.response}
     `.trim();
+}
+
+/**
+ * Gets the user description from the conversation.
+ * @param conversationId - The id of the conversation.
+ * @returns The user description.
+ */
+export async function getUserDescription(conversationId: string): Promise<string> {
+    const conversation = await conversationsRepository.getConversationById(conversationId);
+    return `
+    Nome: ${conversation?.relevantData?.name || ''}
+    Descrição: ${conversation?.relevantData?.description || 'Não informado'}
+    Habilidades: ${conversation?.relevantData?.skills || 'Não informado'}
+    Interesses: ${conversation?.relevantData?.interests || 'Não informado'}
+    `;
+}
+
+
+/**
+ * Gets the embeddings of the messages.
+ * @param messages - The messages of the conversation.
+ * @returns The embeddings of the messages.
+ */
+export async function getMessageEmbeddings(messages: string[]): Promise<(number[] | undefined)[]> {
+    const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
+    const embeddingsPromise = messages.map(async message => {
+        return openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: message,
+        });
+    });
+    const embeddings = await Promise.all(embeddingsPromise);
+    return embeddings.map(embedding => embedding.data[0]?.embedding);
+}
+
+/**
+ * Calcula a similaridade de cosseno entre dois vetores de embedding.
+ * @param vectorA - Primeiro vetor de embedding.
+ * @param vectorB - Segundo vetor de embedding.
+ * @returns Valor da similaridade de cosseno entre 0 e 1.
+ */
+export function calculateCosineSimilarity(vectorA: number[], vectorB: number[]): number {
+    if (vectorA.length !== vectorB.length) {
+        throw new Error('Vectors must have the same length');
+    }
+
+    // Calcula o produto escalar
+    let dotProduct = 0;
+    let magnitudeA = 0;
+    let magnitudeB = 0;
+
+    for (let i = 0; i < vectorA.length; i++) {
+        const valueA = vectorA[i];
+        const valueB = vectorB[i];
+
+        // Verifica se os valores não são undefined
+        if (valueA !== undefined && valueB !== undefined) {
+            dotProduct += valueA * valueB;
+            magnitudeA += valueA * valueA;
+            magnitudeB += valueB * valueB;
+        }
+    }
+
+    // Calcula as magnitudes
+    magnitudeA = Math.sqrt(magnitudeA);
+    magnitudeB = Math.sqrt(magnitudeB);
+
+    // Evita divisão por zero
+    if (magnitudeA === 0 || magnitudeB === 0) {
+        return 0;
+    }
+
+    // Retorna a similaridade de cosseno
+    return dotProduct / (magnitudeA * magnitudeB);
 }

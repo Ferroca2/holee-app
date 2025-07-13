@@ -6,6 +6,13 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { z } from 'zod';
+import { getUserDescription } from './utils';
+import StoresRepository from '../domain/stores/repository';
+import JobsRepository from '../domain/jobs/repository';
+import ApplicationsRepository from '../domain/applications/repository';
+import ConversationsRepository from '../domain/conversations/repository';
+import { ZApiServiceSDK } from '../wpp/zapi/service';
+import { generateJobOptinMessage } from '../jobs/utils';
 
 export class UserAgent {
     private openai: OpenAI;
@@ -32,25 +39,29 @@ Você é o HOLEE, um assistente de IA especialista em carreira e recrutamento. S
 
 Você tem acesso às seguintes ferramentas e deve usá-las para responder às solicitações dos usuários:
 
-1.  **buscar_vagas_correlatas**: Use esta ferramenta para encontrar e exibir um carrossel de vagas de emprego. **A busca é automática e baseada nas informações do perfil do usuário (habilidades, experiências, interesses).**
+1.  **searchRelatedJobs**: Use esta ferramenta para encontrar e exibir um carrossel de vagas de emprego. **A busca é automática e baseada nas informações do perfil do usuário (habilidades, experiências, interesses).**
     * **Quando usar:** Acione quando o usuário pedir para procurar vagas, mostrar oportunidades, ou expressar um desejo geral de ver novas posições.
     * **Exemplos de gatilho:** "Me mostre vagas", "Estou procurando um novo emprego", "Tem alguma oportunidade para mim?", "Encontre vagas de emprego".
 
-2.  **listar_candidaturas_ativas**: Use esta ferramenta para buscar e exibir o carrossel de vagas às quais o usuário já se candidatou.
+2.  **listActiveApplications**: Use esta ferramenta para buscar e exibir o carrossel de vagas às quais o usuário já se candidatou.
     * **Quando usar:** Acione quando o usuário perguntar sobre o status de suas aplicações, "minhas vagas", "meus processos", "em que pé estão minhas candidaturas?" ou qualquer pergunta sobre as vagas que ele já está participando.
     * **Exemplos de gatilho:** "Como estão minhas aplicações?", "Pode me mostrar as vagas que eu apliquei?", "Quero ver minhas candidaturas".
 
-3.  **pesquisar_sobre_empresa**: Use esta ferramenta para fazer uma busca textual e retornar informações sobre uma empresa específica.
+3.  **searchCompanyInfo**: Use esta ferramenta para fazer uma busca textual e retornar informações sobre uma empresa específica.
     * **Quando usar:** Acione quando o usuário pedir informações sobre uma empresa. Ideal para ajudar o usuário a se preparar para uma entrevista.
     * **Exemplos de gatilho:** "Me fale mais sobre a [nome da empresa]", "Como é a cultura da [nome da empresa]?", "O que você sabe sobre a [nome da empresa]?".
+
+4. **verifyUserProfile**: Use esta ferramenta para verificar o perfil do usuário.
+    * **Quando usar:** Acione quando o usuário quer saber se uma vaga é compatível com o seu perfil.
+    * **Exemplos de gatilho:** "Esta vaga é compatível com o meu perfil?", "Esta vaga é boa para mim?", "Esta vaga é uma boa opção para mim?".
 
 # Regras de Comportamento e Fluxo de Conversa
 
 1.  **Tom de Voz:** Mantenha sempre um tom positivo, empático e motivador. A busca por emprego pode ser estressante, e seu papel é ser um parceiro confiável.
-2.  **Transparência na Busca:** Ao usar buscar_vagas_correlatas, seja transparente. Informe ao usuário que a busca será feita com base no perfil dele. **Não peça por termos de busca como "qual cargo?"**, pois a ferramenta não os utiliza.
+2.  **Transparência na Busca:** Ao usar searchRelatedJobs, seja transparente. Informe ao usuário que a busca será feita com base no perfil dele. **Não peça por termos de busca como "qual cargo?"**, pois a ferramenta não os utiliza.
     * **Exemplo de resposta:** "Claro! Vou buscar algumas vagas que combinam com o seu perfil. Só um momento..."
 3.  **Proatividade:** Seja proativo para criar uma conversa fluida e útil.
-    * Após usar buscar_vagas_correlatas e mostrar as vagas, sugira o próximo passo: "Alguma dessas vagas te interessou? Se quiser, posso buscar mais informações sobre a empresa para te ajudar a se preparar!".
+    * Após usar searchRelatedJobs e mostrar as vagas, sugira o próximo passo: "Alguma dessas vagas te interessou? Se quiser, posso buscar mais informações sobre a empresa para te ajudar a se preparar!".
     * Se o usuário parece perdido, sugira ações: "O que você gostaria de fazer agora? Podemos procurar novas vagas, ver suas candidaturas atuais ou pesquisar sobre alguma empresa específica."
 4.  **Uso das Ferramentas:**
     * Sempre confie nas suas ferramentas para obter informações. Não invente dados sobre vagas, salários ou empresas.
@@ -66,7 +77,7 @@ Seu objetivo final é ser o melhor parceiro de carreira que um usuário poderia 
         this.temperature = this.config.temperature;
     }
 
-    public async process(messages: ChatCompletionMessageParam[]): Promise<{
+    public async process(messages: ChatCompletionMessageParam[], conversationId: string): Promise<{
         reasoning: string;
         response: string;
     } | undefined> {
@@ -120,30 +131,40 @@ Seu objetivo final é ser o melhor parceiro de carreira que um usuário poderia 
 
                     let toolCallResponse;
                     switch (toolName) {
-                        case 'buscar_vagas_correlatas':
+                        case 'searchRelatedJobs':
                             toolCallResponse = {
-                                final: true,
+                                final: false,
                                 response: {
                                     reasoning: 'buscando vagas de emprego que combinam com o perfil do usuário',
-                                    response: 'teste',
+                                    response: await searchRelatedJobs(conversationId),
                                 },
                             }
                             break;
-                        case 'listar_candidaturas_ativas':
+                        case 'listActiveApplications':
                             toolCallResponse = {
-                                final: true,
+                                final: false,
                                 response: {
                                     reasoning: 'listando candidaturas ativas do usuário',
-                                    response: 'teste',
+                                    response: await listActiveApplications(conversationId),
                                 },
                             }
                             break;
-                        case 'pesquisar_sobre_empresa':
+                        case 'searchCompanyInfo':
+                            const response = await searchCompanyInfo(toolArgs.companyName);
                             toolCallResponse = {
-                                final: true,
+                                final: false,
                                 response: {
                                     reasoning: 'pesquisando informações sobre a empresa',
-                                    response: 'teste',
+                                    response: response,
+                                },
+                            }
+                            break;
+                        case 'verifyUserProfile':
+                            toolCallResponse = {
+                                final: false,
+                                response: {
+                                    reasoning: 'verificando perfil do usuário',
+                                    response: await verifyUserProfile(conversationId),
                                 },
                             }
                             break;
@@ -155,7 +176,7 @@ Seu objetivo final é ser o melhor parceiro de carreira que um usuário poderia 
                         throw new Error('Nenhuma resposta da função encontrada');
                     }
 
-                    console.log(`[HistoryAgent] Tool call (${toolName}: ${JSON.stringify(toolArgs)}) response: ${toolCallResponse.response.response}`);
+                    console.log(`[UserAgent] Tool call (${toolName}: ${JSON.stringify(toolArgs)}) response: ${toolCallResponse.response.response}`);
 
                     if (toolCallResponse.final) {
                         return this.schema.parse(toolCallResponse.response);
@@ -210,7 +231,7 @@ export const tools = [
     {
         type: 'function' as const,
         function: {
-            name: 'buscar_vagas_correlatas',
+            name: 'searchRelatedJobs',
             description: 'Retorna vagas de emprego que combinam com o perfil do usuário',
             strict: true,
             parameters: {
@@ -223,7 +244,7 @@ export const tools = [
     {
         type: 'function' as const,
         function: {
-            name: 'listar_candidaturas_ativas',
+            name: 'listActiveApplications',
             description: 'Retorna vagas de emprego que o usuário já se candidatou',
             strict: true,
             parameters: {
@@ -236,17 +257,187 @@ export const tools = [
     {
         type: 'function' as const,
         function: {
-            name: 'pesquisar_sobre_empresa',
+            name: 'searchCompanyInfo',
             description: 'Retorna informações sobre uma empresa específica',
             strict: true,
             parameters: {
                 type: 'object',
                 properties: {
-                    nome_da_empresa: { type: 'string', description: 'Nome da empresa a ser pesquisada' },
+                    companyName: { type: 'string', description: 'Nome da empresa a ser pesquisada' },
                 },
-                required: ['nome_da_empresa'],
+                required: ['companyName'],
+                additionalProperties: false,
+            },
+        },
+    },
+    {
+        type: 'function' as const,
+        function: {
+            name: 'verifyUserProfile',
+            description: 'Retorna informações sobre o perfil do usuário',
+            strict: true,
+            parameters: {
+                type: 'object',
+                properties: {},
                 additionalProperties: false,
             },
         },
     },
 ];
+
+async function verifyUserProfile(conversationId: string) {
+    const userDescription = await getUserDescription(conversationId);
+    return userDescription;
+}
+
+async function searchCompanyInfo(companyName: string) {
+    const allStores = await StoresRepository.getAllStores();
+    let store = allStores.find(store => store.name === companyName);
+    if (!store) {
+        // busca por nome similar
+        const similarStores = allStores.filter(store => store.name.toLowerCase().includes(companyName.toLowerCase()));
+        if (similarStores.length > 0) {
+            store = similarStores[0];
+        }
+    }
+    return store?.description || 'Não foi possível encontrar informações sobre a empresa';
+}
+
+async function searchRelatedJobs(conversationId: string) {
+    try {
+        const conversation = await ConversationsRepository.getConversationById(conversationId);
+
+        if (!conversation || !conversation.fitResults || conversation.fitResults.length === 0) {
+            return 'Não encontramos vagas abertas no momento. Tente novamente mais tarde.';
+        }
+
+        // Inicializar ZApiService
+        const zApiService = await ZApiServiceSDK.initialize();
+
+        // Buscar até 5 vagas para mostrar
+        const top5Jobs = conversation.fitResults.filter(fitResult => !conversation.currentJobIds?.includes(fitResult.jobId)).slice(0, 5);
+
+        // Buscar informações das empresas para cada vaga
+        const jobsWithStores = await Promise.all(top5Jobs.map(async (fitResult) => {
+            const job = await JobsRepository.getJobById(fitResult.jobId);
+            const store = await StoresRepository.getStoreById(job?.storeId || '');
+            if (!store) {
+                return null;
+            }
+            return { job, store };
+        }));
+
+        // Filtrar vagas que não encontraram a empresa
+        const validJobsWithStores = jobsWithStores.filter((item): item is { job: any; store: any } => item !== null);
+
+        if (validJobsWithStores.length === 0) {
+            return 'Encontramos vagas, mas não conseguimos carregar as informações das empresas. Tente novamente mais tarde.';
+        }
+
+        // Criar carrossel
+        const carousel = validJobsWithStores.map((item) => ({
+            image: item.store.logo || 'https://via.placeholder.com/300x200?text=Empresa',
+            text: `*${item.job.title}* - ${item.store.name}\n\n${item.job.description}\n\n📍 ${item.job.location}\n💰 ${item.job.salaryRange ? `R$ ${item.job.salaryRange.min.toLocaleString()} - R$ ${item.job.salaryRange.max.toLocaleString()}` : 'Salário a combinar'}\n`,
+            buttons: [
+                {
+                    type: 'REPLY' as const,
+                    label: generateJobOptinMessage(item.job.id),
+                },
+            ],
+        }));
+
+        // Enviar carrossel
+        await zApiService.sendCarousel({
+            phone: conversationId,
+            message: `🎯 Encontramos ${validJobsWithStores.length} vaga${validJobsWithStores.length > 1 ? 's' : ''} que pode${validJobsWithStores.length > 1 ? 'm' : ''} ser interessante${validJobsWithStores.length > 1 ? 's' : ''} para você:`,
+            carousel,
+        });
+
+        return `Enviei um carrossel com ${validJobsWithStores.length} vaga${validJobsWithStores.length > 1 ? 's' : ''} para você! 🚀`;
+    } catch (error) {
+        console.error('[buscar_vagas_correlatas] Error:', error);
+        return 'Ocorreu um erro ao buscar as vagas. Tente novamente mais tarde.';
+    }
+}
+
+async function listActiveApplications(conversationId: string) {
+    try {
+        // Buscar candidaturas do usuário
+        const conversation = await ConversationsRepository.getConversationById(conversationId);
+
+        if (!conversation) {
+            return 'Não encontramos a conversa. Tente novamente mais tarde.';
+        }
+
+        if (!conversation.currentJobIds || conversation.currentJobIds.length === 0) {
+            return 'Você ainda não tem candidaturas ativas. Que tal procurar por algumas vagas interessantes?';
+        }
+
+        // Inicializar ZApiService
+        const zApiService = await ZApiServiceSDK.initialize();
+
+        // Buscar informações das vagas e empresas para cada candidatura
+        const applicationsWithJobsAndStores = await Promise.all(conversation.currentJobIds.map(async (jobId) => {
+            const job = await JobsRepository.getJobById(jobId);
+            if (!job) {
+                return null;
+            }
+
+            const store = await StoresRepository.getStoreById(job.storeId);
+            if (!store) {
+                return null;
+            }
+
+            return { job, store };
+        }));
+
+        // Filtrar candidaturas que não encontraram vaga ou empresa
+        const validApplicationsWithJobsAndStores = applicationsWithJobsAndStores.filter((item): item is { job: any; store: any } => item !== null);
+
+        if (validApplicationsWithJobsAndStores.length === 0) {
+            return 'Encontramos suas candidaturas, mas não conseguimos carregar as informações das vagas. Tente novamente mais tarde.';
+        }
+
+        // Função para traduzir o status da candidatura
+        const getStatusText = (step: string) => {
+            switch (step) {
+                case 'match_with_job':
+                    return '🎯 Compatível com a vaga';
+                case 'accept_job':
+                    return '✅ Candidatura enviada';
+                case 'interview':
+                    return '📋 Processo de entrevista';
+                case 'ranking':
+                    return '🏆 Em avaliação';
+                case 'finalist':
+                    return '🎉 Finalista';
+                default:
+                    return '📄 Em andamento';
+            }
+        };
+
+        // Criar carrossel
+        const carousel = validApplicationsWithJobsAndStores.map((item) => ({
+            image: item.store.logo || 'https://via.placeholder.com/300x200?text=Empresa',
+            text: `*${item.job.title}* - ${item.store.name}\n\n${item.job.description}\n\n📍 ${item.job.location}\n💰 ${item.job.salaryRange ? `R$ ${item.job.salaryRange.min.toLocaleString()} - R$ ${item.job.salaryRange.max.toLocaleString()}` : 'Salário a combinar'}}\n`,
+            buttons: [
+                {
+                    type: 'REPLY' as const,
+                    label: 'Ver mais detalhes',
+                },
+            ],
+        }));
+
+        // Enviar carrossel
+        await zApiService.sendCarousel({
+            phone: conversationId,
+            message: `📝 Suas candidaturas ativas (${validApplicationsWithJobsAndStores.length}):`,
+            carousel,
+        });
+
+        return `Enviei um carrossel com suas ${validApplicationsWithJobsAndStores.length} candidatura${validApplicationsWithJobsAndStores.length > 1 ? 's' : ''} ativa${validApplicationsWithJobsAndStores.length > 1 ? 's' : ''}! 📋`;
+    } catch (error) {
+        console.error('[listar_candidaturas_ativas] Error:', error);
+        return 'Ocorreu um erro ao buscar suas candidaturas. Tente novamente mais tarde.';
+    }
+}

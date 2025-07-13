@@ -122,6 +122,7 @@ Seu objetivo é ajudar o candidato a completar seu perfil profissional fazendo p
 - Mantenha o foco na experiência profissional do candidato
 - Seja específico sobre habilidades técnicas e comportamentais
 - Para descrição profissional, ajude a criar um resumo conciso e impactante
+- NUNCA CHAME A TOOL completeProfile sem a confirmação do usuário
         `;
     }
 

@@ -13,6 +13,7 @@ import { Job } from '../../../domain/jobs/entity';
 import StoresRepository from '../../../domain/stores/repository';
 import ConversationsRepository from '../../../domain/conversations/repository';
 import JobsRepository from '../../../domain/jobs/repository';
+import { MatchAgent } from '@/ai/matchAgent';
 
 /**
  * Cloud Task function to process jobs for a specific conversation
@@ -162,8 +163,21 @@ async function processJobForConversation(job: AdminBaseRef<Job>, conversation: A
 
     const fitScore = cosineSimilarity;
 
-    // Apply threshold filter and return the jobId and fitScore if above threshold
-    return fitScore >= 0.2 ? { jobId: job.id, fitScore } : null;
+    if (fitScore < 0.35) {
+        return null;
+    }
+
+    const matchAgent = new MatchAgent(conversation.id);
+    const matchScore = await matchAgent.process(jobDescription, personDescription);
+    if (!matchScore) {
+        return null;
+    }
+
+    if (matchScore.matchScore >= 70) {
+        return { jobId: job.id, fitScore: matchScore.matchScore / 100 };
+    }
+
+    return null;
 }
 
 /**

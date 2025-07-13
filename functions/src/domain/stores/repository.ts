@@ -15,6 +15,7 @@ export interface StoresRepositoryI {
     setStore(storeId: string, data: Store): Promise<void>;
     updateStore(storeId: string, data: Partial<Store>): Promise<void>;
     getStoreById(storeId: string): Promise<AdminBaseRef<Store> | null>;
+    getAllStores(): Promise<AdminBaseRef<Store>[]>;
 }
 
 /**
@@ -28,6 +29,15 @@ export class StoresRepositoryServerSDK implements StoresRepositoryI {
      */
     private getCollection(): firestore.CollectionReference<Store> {
         return db.collection('stores') as firestore.CollectionReference<Store>;
+    }
+
+    /**
+     * Retorna todas as Stores.
+     * @returns Todas as Stores.
+     */
+    async getAllStores(): Promise<AdminBaseRef<Store>[]> {
+        const stores = await this.getCollection().get();
+        return stores.docs.map(doc => convertDoc(doc as QueryDocumentSnapshot<Store>));
     }
 
     /**

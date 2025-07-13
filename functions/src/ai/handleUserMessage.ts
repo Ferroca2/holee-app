@@ -16,7 +16,7 @@ export const handleUserMessage = async (messagePath: MessagePath, context: ChatC
     const { conversationId } = messagePath;
     try {
         const userAgent = new UserAgent();
-        const response = await userAgent.process(context);
+        const response = await userAgent.process(context, conversationId);
 
         const responsePayload = {
             type: 'text' as const,

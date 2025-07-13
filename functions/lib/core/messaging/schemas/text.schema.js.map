@@ -1,1 +1,0 @@
-{"version":3,"file":"text.schema.js","sourceRoot":"","sources":["../../../../src/core/messaging/schemas/text.schema.ts"],"names":[],"mappings":";;;AAAA,6BAAwB;AACxB,+CAAyD;AAEzD,yBAAyB;AACZ,QAAA,iBAAiB,GAAG,sCAAwB,CAAC,MAAM,CAAC;IAC7D,IAAI,EAAE,OAAC,CAAC,OAAO,CAAC,MAAM,CAAC;IACvB,IAAI,EAAE,OAAC,CAAC,MAAM,EAAE,EAAY,+BAA+B;CAC9D,CAAC,CAAC,MAAM,EAAE,CAAC"}
