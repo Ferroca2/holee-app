@@ -113,7 +113,7 @@ export default async function rankApplicationsTask(context: Request): Promise<vo
         logger.info(`[${jobId}] Processing completed. ${validCandidates.length} candidates ready for ranking`);
 
         // 7. Rank candidates
-        const ranking = await swissArmyCompare(validCandidates.map(candidate => candidate.id), job.description);
+        const ranking = await swissArmyCompare(validCandidates, job.description);
         await JobsRepository.updateJob(jobId, {
             finalRanking: ranking,
         });
