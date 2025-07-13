@@ -88,10 +88,9 @@ export default async function rankApplicationsTask(context: Request): Promise<vo
         const validCandidates = [];
         const candidatesToReject = [];
         for (const candidate of candidateApplications) {
-            // Check if interview was completed (has interviewData and notes)
+            // Check if interview was completed (has interviewData)
             const hasInterviewData = candidate.interviewData !== undefined;
-            const hasNotes = candidate.interviewData?.notes !== undefined && candidate.interviewData.notes.trim() !== '';   // TODO: Check some flag instead
-            if (hasInterviewData && hasNotes) {
+            if (hasInterviewData) {
                 validCandidates.push(candidate);
                 logger.info(`[${jobId}] Candidate ${candidate.id} has completed interview`);
             } else {

@@ -15,12 +15,7 @@ import {
     getScriptRequestSchema,
     GetScriptRequest,
     GetScriptResponse,
-    getNotesRequestSchema,
-    GetNotesRequest,
-    GetNotesResponse,
-    updateNotesRequestSchema,
-    UpdateNotesRequest,
-    UpdateNotesResponse,
+
 } from '../models/tools.model';
 
 import toolsService from '../services/tools.service';
@@ -32,8 +27,6 @@ interface ToolsControllerI {
     getChecklist(req: Request, res: Response): Promise<void>;
     updateChecklist(req: Request, res: Response): Promise<void>;
     getScript(req: Request, res: Response): Promise<void>;
-    getNotes(req: Request, res: Response): Promise<void>;
-    updateNotes(req: Request, res: Response): Promise<void>;
 }
 
 /**
@@ -186,101 +179,7 @@ class ToolsController implements ToolsControllerI {
         }
     }
 
-    /**
-     * Gets notes for application interview
-     *
-     * @route GET /api/voice-agent/v1/job/:jobId/conversation/:conversationId/notes
-     * @param req - Express request object
-     * @param res - Express response object
-     * @returns HTTP response with notes data
-     */
-    async getNotes(req: Request, res: Response): Promise<void> {
-        try {
-            // Request parameters
-            const jobId = req.params.jobId;
-            const conversationId = req.params.conversationId;
 
-            // Validate request using Zod schema
-            const validatedRequest = validateRequest<GetNotesRequest>(
-                getNotesRequestSchema,
-                {
-                    jobId,
-                    conversationId,
-                }
-            );
-
-            // Get notes from service
-            const responseData = await toolsService.getNotes(validatedRequest);
-            if ('error' in responseData) {
-                logger.warn(`[${jobId}/${conversationId}] [GET /notes] Error in getNotes controller: ${responseData.error}`);
-                sendErrorResponse(res, responseData);
-                return;
-            }
-
-            // Return success response
-            logger.info(`[${jobId}/${conversationId}] [GET /notes] Notes retrieved successfully`);
-            const successResponse: GetNotesResponse = {
-                message: 'Notes retrieved successfully',
-                data: responseData,
-            };
-            sendSuccessResponse(res, successResponse);
-        } catch (error) {
-            // Handle validation errors
-            if (handleValidationError(error, req, res, 'GET /notes')) return;
-
-            // Handle all other errors as internal server errors
-            logger.error(`[${req.params.jobId}/${req.params.conversationId}] [GET /notes] Error in getNotes controller: ${(error as Error).message}`);
-            sendErrorResponse(res, errorResponses.serverError());
-        }
-    }
-
-    /**
-     * Updates notes for application interview
-     *
-     * @route POST /api/voice-agent/v1/job/:jobId/conversation/:conversationId/notes
-     * @param req - Express request object
-     * @param res - Express response object
-     * @returns HTTP response with update result
-     */
-    async updateNotes(req: Request, res: Response): Promise<void> {
-        try {
-            // Request parameters
-            const jobId = req.params.jobId;
-            const conversationId = req.params.conversationId;
-
-            // Validate request data
-            const validatedRequest = validateRequest<UpdateNotesRequest>(
-                updateNotesRequestSchema,
-                {
-                    jobId,
-                    conversationId,
-                    data: req.body,
-                }
-            );
-
-            // Call service to update the notes
-            const responseData = await toolsService.updateNotes(validatedRequest);
-            if ('error' in responseData) {
-                logger.warn(`[${jobId}/${conversationId}] [POST /notes] Error in updateNotes controller: ${responseData.error}`);
-                sendErrorResponse(res, responseData);
-                return;
-            }
-
-            // Return success response
-            logger.info(`[${jobId}/${conversationId}] [POST /notes] Notes updated successfully`);
-            const successResponse: UpdateNotesResponse = {
-                message: 'Notes updated successfully',
-            };
-            sendSuccessResponse(res, successResponse);
-        } catch (error) {
-            // Handle validation errors
-            if (handleValidationError(error, req, res, 'POST /notes')) return;
-
-            // Handle all other errors as internal server errors
-            logger.error(`[${req.params.jobId}/${req.params.conversationId}] [POST /notes] Error in updateNotes controller: ${(error as Error).message}`);
-            sendErrorResponse(res, errorResponses.serverError());
-        }
-    }
 }
 
 // Export a single instance of the controller

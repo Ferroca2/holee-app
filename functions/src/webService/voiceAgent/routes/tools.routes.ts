@@ -33,24 +33,4 @@ router.get(
     toolsController.getScript
 );
 
-/**
- * @route GET /api/voice-agent/v1/job/:jobId/conversation/:conversationId/notes
- * @desc Get notes for application interview
- * @access Private (voice agent)
- */
-router.get(
-    '/notes',
-    toolsController.getNotes
-);
-
-/**
- * @route POST /api/voice-agent/v1/job/:jobId/conversation/:conversationId/notes
- * @desc Update notes for application interview
- * @access Private (voice agent)
- */
-router.post(
-    '/notes',
-    toolsController.updateNotes
-);
-
 export default router;
