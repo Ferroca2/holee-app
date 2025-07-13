@@ -13,7 +13,7 @@ import { Job } from '../../../domain/jobs/entity';
 import StoresRepository from '../../../domain/stores/repository';
 import ConversationsRepository from '../../../domain/conversations/repository';
 import JobsRepository from '../../../domain/jobs/repository';
-import { MatchAgent } from '@/ai/matchAgent';
+import { MatchAgent } from '../../../ai/matchAgent';
 
 /**
  * Cloud Task function to process jobs for a specific conversation

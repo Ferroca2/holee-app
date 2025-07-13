@@ -89,6 +89,21 @@ export const optInApplicationTask = onTaskDispatched(
     req => import('./jobs/tasks/optInApplicationTask').then(m => m.default(req))
 );
 
+export const rankApplicationsTask = onTaskDispatched(
+    {
+        timeoutSeconds: 300,
+        memory: '512MiB',
+        cpu: 2,
+        retryConfig: {
+            maxAttempts: 1,
+        },
+        rateLimits: {
+            maxConcurrentDispatches: 100,
+        },
+    },
+    req => import('./jobs/tasks/rankApplicationsTask').then(m => m.default(req))
+);
+
 /* AI Service */
 
 export * as firestore from './firestore';

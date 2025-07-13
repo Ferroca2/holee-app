@@ -639,7 +639,7 @@ export const clearFirestoreData = async () =>
             jobId: createdJobs[0]!, // Backend Developer Java
             conversationId: createdConversations[7]!, // Pedro Ferreira
             status: ApplicationStatus.IN_PROGRESS,
-            currentStep: ApplicationStep.ACCEPT_JOB,
+            currentStep: ApplicationStep.MATCH_WITH_JOB,
             createdAt: currentTime - (8 * 60 * 60 * 1000),
             updatedAt: currentTime - (8 * 60 * 60 * 1000),
         },
@@ -647,7 +647,7 @@ export const clearFirestoreData = async () =>
             jobId: createdJobs[0]!, // Backend Developer Java
             conversationId: createdConversations[8]!, // Luciana Pereira
             status: ApplicationStatus.IN_PROGRESS,
-            currentStep: ApplicationStep.ACCEPT_JOB,
+            currentStep: ApplicationStep.MATCH_WITH_JOB,
             createdAt: currentTime - (8 * 60 * 60 * 1000),
             updatedAt: currentTime - (8 * 60 * 60 * 1000),
         },
@@ -655,7 +655,7 @@ export const clearFirestoreData = async () =>
             jobId: createdJobs[0]!, // Backend Developer Java
             conversationId: createdConversations[9]!, // Rodrigo Barbosa
             status: ApplicationStatus.IN_PROGRESS,
-            currentStep: ApplicationStep.ACCEPT_JOB,
+            currentStep: ApplicationStep.MATCH_WITH_JOB,
             createdAt: currentTime - (16 * 60 * 60 * 1000),
             updatedAt: currentTime - (16 * 60 * 60 * 1000),
         },
@@ -663,7 +663,7 @@ export const clearFirestoreData = async () =>
             jobId: createdJobs[0]!, // Backend Developer Java
             conversationId: createdConversations[10]!, // Vanessa Gomes
             status: ApplicationStatus.IN_PROGRESS,
-            currentStep: ApplicationStep.ACCEPT_JOB,
+            currentStep: ApplicationStep.MATCH_WITH_JOB,
             createdAt: currentTime - (17 * 60 * 60 * 1000),
             updatedAt: currentTime - (17 * 60 * 60 * 1000),
         },

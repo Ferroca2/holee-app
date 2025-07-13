@@ -13,3 +13,10 @@ export const onConversationWrite = onDocumentWritten(
     },
     event => import('./onConversationWrite').then(mod => mod.default(event))
 );
+
+export const onJobWrite = onDocumentWritten(
+    {
+        document: 'jobs/{jobId}',
+    },
+    event => import('./onJobWrite').then(mod => mod.default(event))
+);
