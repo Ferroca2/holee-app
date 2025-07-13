@@ -197,7 +197,7 @@ Seu objetivo final é ser o melhor parceiro de carreira que um usuário poderia 
                 throw new Error('Nenhuma resposta válida após todas as iterações');
             }
         } catch (error) {
-            throw new Error(`Error in HistoryAgent: ${error}`);
+            throw new Error(`Error in UserAgent: ${error}`);
         }
     }
 }
@@ -213,7 +213,11 @@ export const tools = [
             name: 'buscar_vagas_correlatas',
             description: 'Retorna vagas de emprego que combinam com o perfil do usuário',
             strict: true,
-            parameters: {},
+            parameters: {
+                type: 'object',
+                properties: {},
+                additionalProperties: false,
+            },
         },
     },
     {
@@ -222,7 +226,11 @@ export const tools = [
             name: 'listar_candidaturas_ativas',
             description: 'Retorna vagas de emprego que o usuário já se candidatou',
             strict: true,
-            parameters: {},
+            parameters: {
+                type: 'object',
+                properties: {},
+                additionalProperties: false,
+            },
         },
     },
     {
