@@ -4,6 +4,16 @@
 
 O Holee App é uma plataforma completa de recrutamento que conecta candidatos a vagas de emprego através de conversas inteligentes no WhatsApp, powered by AI. A solução oferece matching automático, entrevistas por voz e um dashboard administrativo moderno.
 
+## Como Usar na Prática
+
+### Portal: https://holee-app.web.app/
+Login: hr@techcorp.com
+Senha: hr123456
+
+### Link do WhatsApp
+
+https://wa.me/5511956029500
+
 ## 🎯 Visão Geral
 
 **Para Candidatos:**
