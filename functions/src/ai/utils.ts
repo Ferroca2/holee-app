@@ -4,6 +4,7 @@ import { ChatCompletionContentPart } from "openai/resources";
 import FirecrawlApp, { ScrapeResponse } from '@mendable/firecrawl-js';
 import conversationsRepository from "../domain/conversations/repository";
 import OpenAI from 'openai';
+import { CompareCandidates } from './compareCandidates';
 
 
 export const getCrawlResult = async (url: string) => {
@@ -138,11 +139,18 @@ ${response.response}
  */
 export async function getUserDescription(conversationId: string): Promise<string> {
     const conversation = await conversationsRepository.getConversationById(conversationId);
+    const relevantData = conversation?.relevantData;
+
+    const name = relevantData?.name || '';
+    const description = relevantData?.description || 'Não informado';
+    const skills = relevantData?.skills || 'Não informado';
+    const interests = relevantData?.interests || 'Não informado';
+
     return `
-    Nome: ${conversation?.relevantData?.name || ''}
-    Descrição: ${conversation?.relevantData?.description || 'Não informado'}
-    Habilidades: ${conversation?.relevantData?.skills || 'Não informado'}
-    Interesses: ${conversation?.relevantData?.interests || 'Não informado'}
+    Nome: ${name}
+    Descrição: ${description}
+    Habilidades: ${skills}
+    Interesses: ${interests}
     `;
 }
 
@@ -205,4 +213,99 @@ export function calculateCosineSimilarity(vectorA: number[], vectorB: number[]):
 
     // Retorna a similaridade de cosseno
     return dotProduct / (magnitudeA * magnitudeB);
+}
+
+/**
+ * Função "chave suiça" para comparação múltipla de candidatos.
+ * Realiza comparações par a par entre todos os candidatos e retorna um ranking.
+ * @param conversationIds - Array de IDs de conversas dos candidatos.
+ * @param jobDescription - Descrição da vaga para comparação.
+ * @param maxRounds - Número máximo de rodadas do torneio.
+ * @returns Ranking dos candidatos ordenado do melhor para o pior.
+ */
+export async function swissArmyCompare(
+    conversationIds: string[],
+    jobDescription: string,
+    maxRounds: number = 3
+): Promise<string[]> {
+        // Validações iniciais
+    if (!conversationIds || conversationIds.length === 0) {
+        throw new Error('Array de conversationIds não pode estar vazio');
+    }
+
+    if (conversationIds.length === 1) {
+        return [conversationIds[0]!];
+    }
+
+    // Obtém descrições dos candidatos
+    const candidatesData = await Promise.all(
+        conversationIds.map(async (id) => ({
+            id,
+            resumo: await getUserDescription(id)
+        }))
+    );
+
+    // Inicializa sistema de pontuação
+    const scoreSystem = new Map<string, { wins: number; totalBattles: number }>();
+
+    candidatesData.forEach(candidate => {
+        scoreSystem.set(candidate.id, { wins: 0, totalBattles: 0 });
+    });
+
+    // Realiza comparações com limite de rodadas
+    const compareAgent = new CompareCandidates('swiss-army-compare');
+    let currentRound = 0;
+
+    while (currentRound < maxRounds) {
+        // Embaralha candidatos para variar os confrontos
+        const shuffledCandidates = [...candidatesData].sort(() => Math.random() - 0.5);
+
+        // Faz confrontos em pares
+        for (let i = 0; i < shuffledCandidates.length - 1; i += 2) {
+            const candidate1 = shuffledCandidates[i];
+            const candidate2 = shuffledCandidates[i + 1];
+
+            if (!candidate1 || !candidate2) continue;
+
+            try {
+                const comparison = await compareAgent.process(
+                    jobDescription,
+                    candidate1,
+                    candidate2
+                );
+
+                if (comparison) {
+                    const winner = comparison.bestCandidateId;
+                    const loser = winner === candidate1.id ? candidate2.id : candidate1.id;
+
+                    const winnerStats = scoreSystem.get(winner)!;
+                    const loserStats = scoreSystem.get(loser)!;
+
+                    winnerStats.wins++;
+                    winnerStats.totalBattles++;
+                    loserStats.totalBattles++;
+                }
+            } catch (error) {
+                console.error(`Erro na comparação entre ${candidate1.id} e ${candidate2.id}:`, error);
+            }
+        }
+
+        currentRound++;
+    }
+
+    // Calcula ranking final e retorna apenas os IDs
+    const ranking = Array.from(scoreSystem.entries())
+        .map(([conversationId, stats]) => ({
+            conversationId,
+            score: stats.totalBattles > 0 ? stats.wins / stats.totalBattles : 0,
+            wins: stats.wins,
+            totalBattles: stats.totalBattles
+        }))
+        .sort((a, b) => {
+            if (a.score !== b.score) return b.score - a.score;
+            if (a.wins !== b.wins) return b.wins - a.wins;
+            return b.totalBattles - a.totalBattles;
+        });
+
+    return ranking.map(item => item.conversationId);
 }
