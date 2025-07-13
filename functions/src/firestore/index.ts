@@ -6,3 +6,10 @@ export const onMessageWrite = onDocumentWritten(
     },
     event => import('./onMessageWrite').then(mod => mod.default(event))
 );
+
+export const onConversationWrite = onDocumentWritten(
+    {
+        document: 'conversations/{conversationId}',
+    },
+    event => import('./onConversationWrite').then(mod => mod.default(event))
+);

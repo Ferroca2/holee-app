@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { onRequest } from 'firebase-functions/v2/https';
+import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 // import { onSchedule } from 'firebase-functions/v2/scheduler';
-// import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 
 admin.initializeApp();
 
@@ -39,6 +39,22 @@ export const onMessageReceiveWebhook = onRequest(
     },
     (...args) => import('./wpp/zapi/webhooks/onMessageReceiveWebhook')
         .then(async m => { await m.default(...args); })
+);
+
+/* Jobs */
+export const processJobsForConversationTask = onTaskDispatched(
+    {
+        timeoutSeconds: 540,
+        memory: '512MiB', // Use '256MiB', '512MiB', '1GiB', '2GiB' or '4GiB'
+        cpu: 2,
+        retryConfig: {
+            maxAttempts: 1, // No retry since we unmark isRefreshing in finally block
+        },
+        rateLimits: {
+            maxConcurrentDispatches: 1000,
+        },
+    },
+    data => import('./jobs/tasks/processJobsForConversationTask').then(m => m.default(data))
 );
 
 /* AI Service */
