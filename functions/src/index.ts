@@ -72,6 +72,7 @@ export const processJobsForConversationTask = onTaskDispatched(
 export const setApplicationTask = onTaskDispatched(
     {
         timeoutSeconds: 60,
+        secrets: ['ZAPI_TOKEN', 'OPENAI_API_KEY'],
         memory: '256MiB',
         cpu: 1,
         retryConfig: {
@@ -87,6 +88,7 @@ export const setApplicationTask = onTaskDispatched(
 export const optInApplicationTask = onTaskDispatched(
     {
         timeoutSeconds: 60,
+        secrets: ['ZAPI_TOKEN', 'OPENAI_API_KEY'],
         memory: '256MiB',
         cpu: 1,
         retryConfig: {
@@ -102,6 +104,7 @@ export const optInApplicationTask = onTaskDispatched(
 export const rankApplicationsTask = onTaskDispatched(
     {
         timeoutSeconds: 300,
+        secrets: ['ZAPI_TOKEN', 'OPENAI_API_KEY'],
         memory: '512MiB',
         cpu: 2,
         retryConfig: {
