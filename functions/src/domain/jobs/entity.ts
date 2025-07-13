@@ -1,0 +1,35 @@
+export type WorkMode = 'REMOTE' | 'HYBRID' | 'ON_SITE';
+export type JobType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT';
+export type JobStatus = 'OPEN' | 'CLOSED';
+
+export interface Job {
+    storeId: string;                          // ID da store que criou a vaga
+
+    title: string;                            // Título da vaga
+    description: string;                      // Descrição detalhada da vaga
+    location: string;                         // Localização da vaga
+    numberOfPositions: number;                // Número de vagas disponíveis
+
+    seniorityLevel: string;                   // Nível de senioridade (Junior, Pleno, Senior, etc.)
+    requiredSkills: string[];                 // Habilidades obrigatórias
+    niceToHaveSkills?: string[];              // Habilidades desejáveis
+    languagesRequired?: string[];             // Idiomas necessários
+
+    salaryRange?: {
+        min: number;
+        max: number;
+    };                // Faixa salarial
+
+    minExperienceYears?: number;              // Anos mínimos de experiência
+
+    workMode: WorkMode;                       // Modo de trabalho (REMOTE, HYBRID, ON_SITE)
+    jobType: JobType;                         // Tipo de contrato (FULL_TIME, PART_TIME, CONTRACT)
+
+    applyStart: number;                       // Início das inscrições (epoch ms) (timestamp)
+    applyEnd: number;                         // Fim das inscrições (epoch ms) (timestamp)
+
+    status: JobStatus;                        // Status da vaga (OPEN, CLOSED)
+
+    createdAt: number;                        // Data de criação (epoch ms) (timestamp)
+    updatedAt?: number;                       // Data de atualização (epoch ms) (timestamp)
+}

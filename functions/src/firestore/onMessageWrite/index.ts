@@ -54,7 +54,6 @@ export default async function onMessageWrite(
                 if (currentIsMe === true) return;
 
                 const aiDataBuffer = Buffer.from(JSON.stringify(messagePath));
-
                 await aiChatAiTopic.publishMessage({
                     data: aiDataBuffer,
                 });
