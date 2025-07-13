@@ -14,7 +14,7 @@ import jobsRepository from '../../../domain/jobs/repository';
  * This function processes a user's opt-in by:
  * 1. Validating the conversation and job exist
  * 2. Finding the existing application (should exist from fit matching)
- * 3. Updating the application to the next step: ACCEPT_JOB
+ * 3. Updating the application to the next step: INTERVIEW
  *
  * @param context - Task context containing the data
  */
@@ -64,14 +64,14 @@ export default async function optInApplicationTask(context: Request): Promise<vo
             return;
         }
 
-        // 5. Update application to next step: ACCEPT_JOB
+        // 5. Update application to next step: INTERVIEW
         const now = Date.now();
         await applicationsRepository.updateApplication(existingApplication.id, {
-            currentStep: ApplicationStep.ACCEPT_JOB,
+            currentStep: ApplicationStep.INTERVIEW,
             updatedAt: now,
         });
 
-        logger.info(`[${conversationId}] Successfully updated application ${existingApplication.id} to ACCEPT_JOB step for job ${jobId}`);
+        logger.info(`[${conversationId}] Successfully updated application ${existingApplication.id} to INTERVIEW step for job ${jobId}`);
     } catch (error) {
         // Handle validation errors differently (don't retry)
         if (error instanceof ValidationError) {
