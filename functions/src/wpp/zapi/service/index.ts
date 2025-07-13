@@ -418,7 +418,7 @@ export class ZApiServiceSDK implements ZApiServiceI {
     }): Promise<MessageInfo> {
         try {
             // Route the payload to the appropriate method based on its type
-            switch(payload.type) {
+            switch (payload.type) {
                 case 'text':
                     // Send text message
                     return await this.sendText({
@@ -495,7 +495,7 @@ export class ZApiServiceSDK implements ZApiServiceI {
                         messageId: options?.messageId,
                     }, payload.extension);
 
-                    // TODO: Implement other message types (link, poll) here as they are supported
+                // TODO: Implement other message types (link, poll) here as they are supported
 
                 case 'carousel':
                     // Send carousel message

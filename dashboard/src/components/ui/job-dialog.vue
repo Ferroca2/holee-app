@@ -2,17 +2,31 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { BaseRef } from '../../domain';
-import { Job } from '../../domain/jobs/entity';
+import { Job, WorkMode, JobType, JobStatus } from '../../domain/jobs/entity';
 import BaseButton from './base-button.vue';
 import BaseInput from './base-input.vue';
+import BaseSelect from './base-select.vue';
 import { useQuasar } from 'quasar';
 
 interface JobFormData {
     title: string;
     description: string;
-    requirements: string[];
+    location: string;
+    numberOfPositions: number | string;
+    seniorityLevel: string;
+    requiredSkills: string[];
+    niceToHaveSkills: string[];
+    languagesRequired: string[];
+    salaryRange: {
+        min: number | string;
+        max: number | string;
+    };
+    minExperienceYears: number | string;
+    workMode: WorkMode;
+    jobType: JobType;
     applyStart: string;
     applyEnd: string;
+    status: JobStatus;
 }
 
 interface Props {
@@ -41,17 +55,64 @@ const isMobile = computed(() => $q.screen.lt.md);
 const jobForm = ref<JobFormData>({
     title: '',
     description: '',
-    requirements: [],
+    location: '',
+    numberOfPositions: 1,
+    seniorityLevel: '',
+    requiredSkills: [],
+    niceToHaveSkills: [],
+    languagesRequired: [],
+    salaryRange: {
+        min: '',
+        max: '',
+    },
+    minExperienceYears: '',
+    workMode: WorkMode.REMOTE,
+    jobType: JobType.FULL_TIME,
     applyStart: '',
     applyEnd: '',
+    status: JobStatus.OPEN,
 });
 
-// New requirement input
-const newRequirement = ref('');
+// New skill inputs
+const newRequiredSkill = ref('');
+const newNiceToHaveSkill = ref('');
+const newLanguage = ref('');
+
+// Options for selects
+const workModeOptions = [
+    { label: 'Remoto', value: 'remote' },
+    { label: 'Híbrido', value: 'hybrid' },
+    { label: 'Presencial', value: 'on_site' },
+];
+
+const jobTypeOptions = [
+    { label: 'Tempo Integral', value: 'full_time' },
+    { label: 'Meio Período', value: 'part_time' },
+    { label: 'Contrato', value: 'contract' },
+];
+
+const statusOptions = [
+    { label: 'Aberta', value: 'open' },
+    { label: 'Fechada', value: 'closed' },
+];
+
+const seniorityOptions = [
+    { label: 'Estagiário', value: 'intern' },
+    { label: 'Júnior', value: 'junior' },
+    { label: 'Pleno', value: 'mid' },
+    { label: 'Sênior', value: 'senior' },
+    { label: 'Especialista', value: 'specialist' },
+    { label: 'Líder Técnico', value: 'tech_lead' },
+];
 
 // Validation rules
 const titleRules = [(val: string) => Boolean(val) || 'Título é obrigatório'];
 const descriptionRules = [(val: string) => Boolean(val) || 'Descrição é obrigatória'];
+const locationRules = [(val: string) => Boolean(val) || 'Localização é obrigatória'];
+const numberOfPositionsRules = [(val: number | string) => {
+    const num = Number(val);
+    return (Boolean(val) && num > 0) || 'Número de vagas deve ser maior que 0';
+}];
 const startDateRules = [(val: string) => Boolean(val) || 'Data de início é obrigatória'];
 const endDateRules = [(val: string) => Boolean(val) || 'Data de fim é obrigatória'];
 
@@ -70,18 +131,44 @@ watch(() => props.job, newJob => {
         jobForm.value = {
             title: newJob.title,
             description: newJob.description,
-            requirements: [...newJob.requirements],
+            location: newJob.location,
+            numberOfPositions: newJob.numberOfPositions || 1,
+            seniorityLevel: newJob.seniorityLevel,
+            requiredSkills: [...newJob.requiredSkills],
+            niceToHaveSkills: [...(newJob.niceToHaveSkills || [])],
+            languagesRequired: [...(newJob.languagesRequired || [])],
+            salaryRange: {
+                min: newJob.salaryRange?.min || '',
+                max: newJob.salaryRange?.max || '',
+            },
+            minExperienceYears: newJob.minExperienceYears || '',
+            workMode: newJob.workMode,
+            jobType: newJob.jobType,
             applyStart: new Date(newJob.applyStart).toISOString().split('T')[0],
             applyEnd: new Date(newJob.applyEnd).toISOString().split('T')[0],
+            status: newJob.status,
         };
     } else if (props.mode === 'create') {
         // Reset form for create mode
         jobForm.value = {
             title: '',
             description: '',
-            requirements: [],
+            location: '',
+            numberOfPositions: 1,
+            seniorityLevel: '',
+            requiredSkills: [],
+            niceToHaveSkills: [],
+            languagesRequired: [],
+            salaryRange: {
+                min: '',
+                max: '',
+            },
+            minExperienceYears: '',
+            workMode: WorkMode.REMOTE,
+            jobType: JobType.FULL_TIME,
             applyStart: '',
             applyEnd: '',
+            status: JobStatus.OPEN,
         };
     }
 }, { immediate: true });
@@ -92,24 +179,61 @@ watch(() => props.mode, newMode => {
         jobForm.value = {
             title: '',
             description: '',
-            requirements: [],
+            location: '',
+            numberOfPositions: 1,
+            seniorityLevel: '',
+            requiredSkills: [],
+            niceToHaveSkills: [],
+            languagesRequired: [],
+            salaryRange: {
+                min: '',
+                max: '',
+            },
+            minExperienceYears: '',
+            workMode: WorkMode.REMOTE,
+            jobType: JobType.FULL_TIME,
             applyStart: '',
             applyEnd: '',
+            status: JobStatus.OPEN,
         };
-        newRequirement.value = '';
+        newRequiredSkill.value = '';
+        newNiceToHaveSkill.value = '';
+        newLanguage.value = '';
     }
 });
 
 // Form functions
-function addRequirement() {
-    if (newRequirement.value.trim()) {
-        jobForm.value.requirements.push(newRequirement.value.trim());
-        newRequirement.value = '';
+function addRequiredSkill() {
+    if (newRequiredSkill.value.trim()) {
+        jobForm.value.requiredSkills.push(newRequiredSkill.value.trim());
+        newRequiredSkill.value = '';
     }
 }
 
-function removeRequirement(index: number) {
-    jobForm.value.requirements.splice(index, 1);
+function removeRequiredSkill(index: number) {
+    jobForm.value.requiredSkills.splice(index, 1);
+}
+
+function addNiceToHaveSkill() {
+    if (newNiceToHaveSkill.value.trim()) {
+        jobForm.value.niceToHaveSkills.push(newNiceToHaveSkill.value.trim());
+        newNiceToHaveSkill.value = '';
+    }
+}
+
+function removeNiceToHaveSkill(index: number) {
+    jobForm.value.niceToHaveSkills.splice(index, 1);
+}
+
+function addLanguage() {
+    if (newLanguage.value.trim()) {
+        jobForm.value.languagesRequired.push(newLanguage.value.trim());
+        newLanguage.value = '';
+    }
+}
+
+function removeLanguage(index: number) {
+    jobForm.value.languagesRequired.splice(index, 1);
 }
 
 function handleSubmit() {
@@ -152,13 +276,18 @@ function closeDialog() {
             <q-card-section class="q-pt-none">
                 <q-form @submit="handleSubmit">
                     <div class="q-gutter-md">
-                        <base-input
-                            v-model="jobForm.title"
-                            label="Título da Vaga"
-                            placeholder="Ex: Desenvolvedor Frontend"
-                            :rules="titleRules"
-                            required
-                        />
+                        <!-- Basic Information -->
+                        <div class="row q-gutter-md">
+                            <div class="col">
+                                <base-input
+                                    v-model="jobForm.title"
+                                    label="Título da Vaga"
+                                    placeholder="Ex: Desenvolvedor Frontend"
+                                    :rules="titleRules"
+                                    required
+                                />
+                            </div>
+                        </div>
 
                         <base-input
                             v-model="jobForm.description"
@@ -170,6 +299,94 @@ function closeDialog() {
                             required
                         />
 
+                        <div class="row q-gutter-md">
+                            <div class="col">
+                                <base-input
+                                    v-model="jobForm.location"
+                                    label="Localização"
+                                    placeholder="Ex: São Paulo, SP"
+                                    :rules="locationRules"
+                                    required
+                                />
+                            </div>
+                            <div class="col">
+                                <base-input
+                                    v-model.number="jobForm.numberOfPositions"
+                                    label="Número de Vagas"
+                                    placeholder="Ex: 2"
+                                    type="number"
+                                    :rules="numberOfPositionsRules"
+                                    required
+                                />
+                            </div>
+                            <div class="col">
+                                <base-select
+                                    v-model="jobForm.seniorityLevel"
+                                    label="Nível de Senioridade"
+                                    placeholder="Selecione o nível"
+                                    :options="seniorityOptions"
+                                    emit-value
+                                    map-options
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Work Details -->
+                        <div class="row q-gutter-md">
+                            <div class="col">
+                                <base-select
+                                    v-model="jobForm.workMode"
+                                    label="Modo de Trabalho"
+                                    placeholder="Selecione o modo"
+                                    :options="workModeOptions"
+                                    emit-value
+                                    map-options
+                                    required
+                                />
+                            </div>
+                            <div class="col">
+                                <base-select
+                                    v-model="jobForm.jobType"
+                                    label="Tipo de Contrato"
+                                    placeholder="Selecione o tipo"
+                                    :options="jobTypeOptions"
+                                    emit-value
+                                    map-options
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Salary and Experience -->
+                        <div class="row q-gutter-md">
+                            <div class="col">
+                                <base-input
+                                    v-model.number="jobForm.salaryRange.min"
+                                    label="Salário Mínimo"
+                                    placeholder="Ex: 5000"
+                                    type="number"
+                                />
+                            </div>
+                            <div class="col">
+                                <base-input
+                                    v-model.number="jobForm.salaryRange.max"
+                                    label="Salário Máximo"
+                                    placeholder="Ex: 8000"
+                                    type="number"
+                                />
+                            </div>
+                            <div class="col">
+                                <base-input
+                                    v-model.number="jobForm.minExperienceYears"
+                                    label="Experiência Mínima (anos)"
+                                    placeholder="Ex: 2"
+                                    type="number"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Dates -->
                         <div class="row q-gutter-md">
                             <div class="col">
                                 <base-input
@@ -193,40 +410,129 @@ function closeDialog() {
                             </div>
                         </div>
 
-                        <!-- Requirements Section -->
+                        <!-- Status (for edit mode) -->
+                        <div v-if="props.mode === 'edit'">
+                            <base-select
+                                v-model="jobForm.status"
+                                label="Status da Vaga"
+                                placeholder="Selecione o status"
+                                :options="statusOptions"
+                                emit-value
+                                map-options
+                                required
+                            />
+                        </div>
+
+                        <!-- Required Skills Section -->
                         <div>
                             <div class="text-subtitle2 q-mb-sm">
-                                Requisitos
+                                Habilidades Obrigatórias
                             </div>
                             <div class="row q-gutter-sm q-mb-md">
                                 <div class="col">
                                     <base-input
-                                        v-model="newRequirement"
-                                        placeholder="Digite um requisito..."
-                                        @keyup.enter="addRequirement"
+                                        v-model="newRequiredSkill"
+                                        placeholder="Digite uma habilidade obrigatória..."
+                                        @keyup.enter="addRequiredSkill"
                                     />
                                 </div>
                                 <div class="col-auto">
                                     <base-button
                                         icon="add"
                                         color="accent"
-                                        @click="addRequirement"
+                                        @click="addRequiredSkill"
                                     />
                                 </div>
                             </div>
                             <div
-                                v-if="jobForm.requirements.length > 0"
+                                v-if="jobForm.requiredSkills.length > 0"
                                 class="q-gutter-xs"
                             >
                                 <q-chip
-                                    v-for="(requirement, index) in jobForm.requirements"
+                                    v-for="(skill, index) in jobForm.requiredSkills"
+                                    :key="index"
+                                    removable
+                                    color="red-1"
+                                    text-color="red-8"
+                                    @remove="removeRequiredSkill(index)"
+                                >
+                                    {{ skill }}
+                                </q-chip>
+                            </div>
+                        </div>
+
+                        <!-- Nice to Have Skills Section -->
+                        <div>
+                            <div class="text-subtitle2 q-mb-sm">
+                                Habilidades Desejáveis
+                            </div>
+                            <div class="row q-gutter-sm q-mb-md">
+                                <div class="col">
+                                    <base-input
+                                        v-model="newNiceToHaveSkill"
+                                        placeholder="Digite uma habilidade desejável..."
+                                        @keyup.enter="addNiceToHaveSkill"
+                                    />
+                                </div>
+                                <div class="col-auto">
+                                    <base-button
+                                        icon="add"
+                                        color="accent"
+                                        @click="addNiceToHaveSkill"
+                                    />
+                                </div>
+                            </div>
+                            <div
+                                v-if="jobForm.niceToHaveSkills.length > 0"
+                                class="q-gutter-xs"
+                            >
+                                <q-chip
+                                    v-for="(skill, index) in jobForm.niceToHaveSkills"
                                     :key="index"
                                     removable
                                     color="blue-1"
                                     text-color="blue-8"
-                                    @remove="removeRequirement(index)"
+                                    @remove="removeNiceToHaveSkill(index)"
                                 >
-                                    {{ requirement }}
+                                    {{ skill }}
+                                </q-chip>
+                            </div>
+                        </div>
+
+                        <!-- Languages Section -->
+                        <div>
+                            <div class="text-subtitle2 q-mb-sm">
+                                Idiomas Necessários
+                            </div>
+                            <div class="row q-gutter-sm q-mb-md">
+                                <div class="col">
+                                    <base-input
+                                        v-model="newLanguage"
+                                        placeholder="Digite um idioma..."
+                                        @keyup.enter="addLanguage"
+                                    />
+                                </div>
+                                <div class="col-auto">
+                                    <base-button
+                                        icon="add"
+                                        color="accent"
+                                        @click="addLanguage"
+                                    />
+                                </div>
+                            </div>
+                            <div
+                                v-if="jobForm.languagesRequired.length > 0"
+                                class="q-gutter-xs"
+                            >
+                                <q-chip
+                                    v-for="(language, index) in jobForm.languagesRequired"
+                                    :key="index"
+                                    removable
+                                    color="green-1"
+                                    text-color="green-8"
+                                    @remove="removeLanguage(index)"
+                                >
+                                    {{ language }}
                                 </q-chip>
                             </div>
                         </div>
@@ -257,7 +563,7 @@ function closeDialog() {
 <style scoped lang="scss">
 .dialog-desktop {
     border-radius: 10px;
-    max-width: 600px;
+    max-width: 800px;
     width: 100%;
 }
 </style>

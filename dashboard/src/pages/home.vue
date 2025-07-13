@@ -1,8 +1,9 @@
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { BaseRef } from '../domain';
-import { Job, JobStatus } from '../domain/jobs/entity';
+import { Job, JobStatus, WorkMode, JobType } from '../domain/jobs/entity';
 import jobRepository from '../domain/jobs/repository';
 import useError from '../hooks/useError';
 import useSuccess from '../hooks/useSuccess';
@@ -16,11 +17,34 @@ import JobDialog from '../components/ui/job-dialog.vue';
 import { useStoresStore } from 'stores/stores';
 import { useSessionStore } from 'stores/session';
 
+// Interface for job form data
+interface JobFormData {
+    title: string;
+    description: string;
+    location: string;
+    numberOfPositions: number | string;
+    seniorityLevel: string;
+    requiredSkills: string[];
+    niceToHaveSkills: string[];
+    languagesRequired: string[];
+    salaryRange: {
+        min: number | string;
+        max: number | string;
+    };
+    minExperienceYears: number | string;
+    workMode: WorkMode;
+    jobType: JobType;
+    applyStart: string;
+    applyEnd: string;
+    status: JobStatus;
+}
+
 const error = useError();
 const success = useSuccess();
 const confirm = useConfirm();
 const loading = ref(false);
 const activeTab = ref('open');
+const router = useRouter();
 
 const storesStore = useStoresStore();
 const sessionStore = useSessionStore();
@@ -188,19 +212,35 @@ async function reopenJob(job: BaseRef<Job>) {
     }
 }
 
+function seeJobDetails(job: BaseRef<Job>) {
+    router.push(`/job/${job.id}`);
+}
+
 // Form functions
-async function handleSaveJob(formData: { title: string; description: string; requirements: string[]; applyStart: string; applyEnd: string }) {
+async function handleSaveJob(formData: JobFormData) {
     loading.value = true;
     try {
         const jobData: Job = {
+            storeId: storesStore.currentStore!.id,
             title: formData.title,
             description: formData.description,
-            requirements: formData.requirements,
+            location: formData.location,
+            numberOfPositions: formData.numberOfPositions ? Number(formData.numberOfPositions) : 1,
+            seniorityLevel: formData.seniorityLevel,
+            requiredSkills: formData.requiredSkills,
+            niceToHaveSkills: formData.niceToHaveSkills,
+            languagesRequired: formData.languagesRequired,
+            salaryRange: formData.salaryRange.min && formData.salaryRange.max ? {
+                min: Number(formData.salaryRange.min),
+                max: Number(formData.salaryRange.max),
+            } : undefined,
+            minExperienceYears: formData.minExperienceYears ? Number(formData.minExperienceYears) : undefined,
+            workMode: formData.workMode,
+            jobType: formData.jobType,
             applyStart: new Date(formData.applyStart).getTime(),
             applyEnd: new Date(formData.applyEnd).getTime(),
             creatorConversationId: sessionStore.user!.uid,
-            storeId: storesStore.currentStore!.id,
-            status: JobStatus.OPEN,
+            status: formData.status,
             createdAt: Date.now(),
         };
 
@@ -221,6 +261,7 @@ async function handleSaveJob(formData: { title: string; description: string; req
         loading.value = false;
     }
 }
+
 // Initialize
 onMounted(() => {
     refreshJobs();
@@ -377,6 +418,7 @@ onMounted(() => {
                     :show-reopen-action="false"
                     @edit-job="openEditJobDialog"
                     @close-job="closeJob"
+                    @see-details="seeJobDetails"
                 />
             </q-tab-panel>
 
@@ -440,6 +482,7 @@ onMounted(() => {
                     :show-close-action="false"
                     :show-reopen-action="true"
                     @reopen-job="reopenJob"
+                    @see-details="seeJobDetails"
                 />
             </q-tab-panel>
         </q-tab-panels>

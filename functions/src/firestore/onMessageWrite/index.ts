@@ -41,10 +41,14 @@ export default async function onMessageWrite(
             ? 'delete'
             : 'update';
 
+    logger.info(`Processing ${changeType} event for conversation ${conversationId}, message ${messageId}`);
+
     try {
         // Get current data
         const currentIsMe = after?.get('isMe') as Message['isMe'] | undefined;
         const currentIsOptInMessage = after?.get('isOptInMessage') as Message['isOptInMessage'] | undefined;
+        logger.info(`Message isMe: ${currentIsMe}`);
+
         const messagePath: MessagePath = {
             conversationId,
             messageId,
@@ -62,18 +66,19 @@ export default async function onMessageWrite(
 
                 const aiDataBuffer = Buffer.from(JSON.stringify(messagePath));
                 await aiChatAiTopic.publishMessage({
-                    data: aiDataBuffer,
+                    json: messagePath,
                 });
 
+                logger.info('Message published successfully to chat-ai topic');
                 break;
             }
             case 'update': {
-
+                logger.info('Processing update event - not implemented yet');
                 break;
             }
 
             case 'delete': {
-
+                logger.info('Processing delete event - not implemented yet');
                 break;
             }
 
@@ -83,5 +88,6 @@ export default async function onMessageWrite(
         }
     } catch (error) {
         logger.error(`Error processing message change (conversationId: ${conversationId}, messageId: ${messageId}):`, error);
+        throw error; // Re-throw para que o Firebase Functions possa tentar novamente
     }
 }

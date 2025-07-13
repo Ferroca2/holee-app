@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BaseRef } from 'src/domain';
-import { Job, JobStatus } from 'src/domain/jobs/entity';
+import { Job, JobStatus, WorkMode, JobType } from 'src/domain/jobs/entity';
 
 interface Props {
     jobs: BaseRef<Job>[];
@@ -19,6 +19,7 @@ const emit = defineEmits([
     'edit-job',
     'close-job',
     'reopen-job',
+    'see-details',
 ]);
 
 // Utility functions
@@ -39,9 +40,9 @@ function formatDateTime(timestamp: number) {
 
 function getStatusBadgeClass(status: JobStatus): string {
     switch (status) {
-        case JobStatus.OPEN:
+        case 'open':
             return 'status-open';
-        case JobStatus.CLOSED:
+        case 'closed':
             return 'status-closed';
         default:
             return 'status-default';
@@ -50,9 +51,9 @@ function getStatusBadgeClass(status: JobStatus): string {
 
 function getStatusLabel(status: JobStatus): string {
     switch (status) {
-        case JobStatus.OPEN:
+        case 'open':
             return 'Aberta';
-        case JobStatus.CLOSED:
+        case 'closed':
             return 'Fechada';
         default:
             return 'Desconhecido';
@@ -61,12 +62,38 @@ function getStatusLabel(status: JobStatus): string {
 
 function getStatusIcon(status: JobStatus): string {
     switch (status) {
-        case JobStatus.OPEN:
+        case 'open':
             return 'work';
-        case JobStatus.CLOSED:
+        case 'closed':
             return 'work_off';
         default:
             return 'help';
+    }
+}
+
+function getWorkModeLabel(workMode: WorkMode): string {
+    switch (workMode) {
+        case 'remote':
+            return 'Remoto';
+        case 'hybrid':
+            return 'Híbrido';
+        case 'on_site':
+            return 'Presencial';
+        default:
+            return 'Não especificado';
+    }
+}
+
+function getJobTypeLabel(jobType: JobType): string {
+    switch (jobType) {
+        case 'full_time':
+            return 'Tempo Integral';
+        case 'part_time':
+            return 'Meio Período';
+        case 'contract':
+            return 'Contrato';
+        default:
+            return 'Não especificado';
     }
 }
 
@@ -80,7 +107,7 @@ function getDaysRemaining(job: BaseRef<Job>): number {
 }
 
 function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string } {
-    if (job.status === JobStatus.CLOSED) {
+    if (job.status === 'closed') {
         return { text: 'Fechada', color: 'grey' };
     }
 
@@ -95,6 +122,27 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
         return { text: `${daysRemaining} dias restantes`, color: 'warning' };
     } else {
         return { text: `${daysRemaining} dias restantes`, color: 'positive' };
+    }
+}
+
+function formatSalaryRange(salaryRange?: { min: number; max: number }): string {
+    if (!salaryRange) return 'Não informado';
+
+    const formatter = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    });
+
+    if (salaryRange.min && salaryRange.max) {
+        return `${formatter.format(salaryRange.min)} - ${formatter.format(salaryRange.max)}`;
+    } else if (salaryRange.min) {
+        return `A partir de ${formatter.format(salaryRange.min)}`;
+    } else if (salaryRange.max) {
+        return `Até ${formatter.format(salaryRange.max)}`;
+    } else {
+        return 'Não informado';
     }
 }
 </script>
@@ -144,7 +192,7 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
                                 caption
                                 class="text-grey-6"
                             >
-                                Criado por: {{ job.creatorConversationId }}
+                                {{ job.location }} • {{ getWorkModeLabel(job.workMode) }} • {{ getJobTypeLabel(job.jobType) }}
                             </q-item-label>
                             <q-chip
                                 :color="getExpirationStatus(job).color"
@@ -178,6 +226,81 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
 
                                     <div class="text-body2 text-grey-8 row items-center">
                                         <q-icon
+                                            name="store"
+                                            size="13px"
+                                            class="q-mr-xs text-grey-7"
+                                        />
+                                        Loja: {{ job.storeId }}
+                                    </div>
+
+                                    <div class="text-body2 text-grey-8 row items-center">
+                                        <q-icon
+                                            name="place"
+                                            size="13px"
+                                            class="q-mr-xs text-grey-7"
+                                        />
+                                        Localização: {{ job.location }}
+                                    </div>
+
+                                    <div class="text-body2 text-grey-8 row items-center">
+                                        <q-icon
+                                            name="people"
+                                            size="13px"
+                                            class="q-mr-xs text-grey-7"
+                                        />
+                                        Número de vagas: {{ job.numberOfPositions }}
+                                    </div>
+
+                                    <div class="text-body2 text-grey-8 row items-center">
+                                        <q-icon
+                                            name="work"
+                                            size="13px"
+                                            class="q-mr-xs text-grey-7"
+                                        />
+                                        Modo de trabalho: {{ getWorkModeLabel(job.workMode) }}
+                                    </div>
+
+                                    <div class="text-body2 text-grey-8 row items-center">
+                                        <q-icon
+                                            name="schedule"
+                                            size="13px"
+                                            class="q-mr-xs text-grey-7"
+                                        />
+                                        Tipo de contrato: {{ getJobTypeLabel(job.jobType) }}
+                                    </div>
+
+                                    <div class="text-body2 text-grey-8 row items-center">
+                                        <q-icon
+                                            name="trending_up"
+                                            size="13px"
+                                            class="q-mr-xs text-grey-7"
+                                        />
+                                        Nível de senioridade: {{ job.seniorityLevel }}
+                                    </div>
+
+                                    <div class="text-body2 text-grey-8 row items-center">
+                                        <q-icon
+                                            name="attach_money"
+                                            size="13px"
+                                            class="q-mr-xs text-grey-7"
+                                        />
+                                        Faixa salarial: {{ formatSalaryRange(job.salaryRange) }}
+                                    </div>
+
+                                    <div
+                                        v-if="job.minExperienceYears"
+                                        class="text-body2 text-grey-8 row items-center"
+                                    >
+                                        <q-icon
+                                            name="school"
+                                            size="13px"
+                                            class="q-mr-xs text-grey-7"
+                                        />
+                                        Experiência mínima: {{ job.minExperienceYears }} anos
+                                    </div>
+
+                                    <div class="text-body2 text-grey-8 row items-center">
+                                        <q-icon
                                             name="description"
                                             size="13px"
                                             class="q-mr-xs text-grey-7"
@@ -187,20 +310,11 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
 
                                     <div class="text-body2 text-grey-8 row items-center">
                                         <q-icon
-                                            name="schedule"
+                                            name="date_range"
                                             size="13px"
                                             class="q-mr-xs text-grey-7"
                                         />
                                         Período de inscrições: {{ formatDate(job.applyStart) }} - {{ formatDate(job.applyEnd) }}
-                                    </div>
-
-                                    <div class="text-body2 text-grey-8 row items-center">
-                                        <q-icon
-                                            name="person"
-                                            size="13px"
-                                            class="q-mr-xs text-grey-7"
-                                        />
-                                        Criador: {{ job.creatorConversationId }}
                                     </div>
 
                                     <div class="text-body2 text-grey-8 row items-center">
@@ -212,9 +326,9 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
                                         Criada em: {{ formatDateTime(job.createdAt) }}
                                     </div>
 
-                                    <!-- Requirements -->
+                                    <!-- Required Skills -->
                                     <div
-                                        v-if="job.requirements && job.requirements.length > 0"
+                                        v-if="job.requiredSkills && job.requiredSkills.length > 0"
                                         class="q-mt-sm"
                                     >
                                         <div class="text-body2 text-grey-8 row items-center q-mb-xs">
@@ -223,16 +337,68 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
                                                 size="13px"
                                                 class="q-mr-xs text-grey-7"
                                             />
-                                            Requisitos:
+                                            Habilidades obrigatórias:
                                         </div>
                                         <div class="q-ml-lg">
                                             <div
-                                                v-for="(requirement, index) in job.requirements"
+                                                v-for="(skill, index) in job.requiredSkills"
                                                 :key="index"
                                                 class="text-caption text-grey-7 q-mb-xs"
                                             >
                                                 <div class="text-weight-medium">
-                                                    • {{ requirement }}
+                                                    • {{ skill }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Nice to Have Skills -->
+                                    <div
+                                        v-if="job.niceToHaveSkills && job.niceToHaveSkills.length > 0"
+                                        class="q-mt-sm"
+                                    >
+                                        <div class="text-body2 text-grey-8 row items-center q-mb-xs">
+                                            <q-icon
+                                                name="star_border"
+                                                size="13px"
+                                                class="q-mr-xs text-grey-7"
+                                            />
+                                            Habilidades desejáveis:
+                                        </div>
+                                        <div class="q-ml-lg">
+                                            <div
+                                                v-for="(skill, index) in job.niceToHaveSkills"
+                                                :key="index"
+                                                class="text-caption text-grey-7 q-mb-xs"
+                                            >
+                                                <div class="text-weight-medium">
+                                                    • {{ skill }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Languages -->
+                                    <div
+                                        v-if="job.languagesRequired && job.languagesRequired.length > 0"
+                                        class="q-mt-sm"
+                                    >
+                                        <div class="text-body2 text-grey-8 row items-center q-mb-xs">
+                                            <q-icon
+                                                name="language"
+                                                size="13px"
+                                                class="q-mr-xs text-grey-7"
+                                            />
+                                            Idiomas necessários:
+                                        </div>
+                                        <div class="q-ml-lg">
+                                            <div
+                                                v-for="(language, index) in job.languagesRequired"
+                                                :key="index"
+                                                class="text-caption text-grey-7 q-mb-xs"
+                                            >
+                                                <div class="text-weight-medium">
+                                                    • {{ language }}
                                                 </div>
                                             </div>
                                         </div>
@@ -254,7 +420,7 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
                                                     • Status: {{ getStatusLabel(job.status) }}
                                                 </div>
                                                 <div
-                                                    v-if="job.status === JobStatus.OPEN"
+                                                    v-if="job.status === 'open'"
                                                     class="q-ml-md q-mt-xs"
                                                 >
                                                     <div class="text-grey-6">
@@ -277,6 +443,17 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
                             <div class="col-auto">
                                 <div class="column q-gutter-xs">
                                     <q-btn
+                                        flat
+                                        round
+                                        size="sm"
+                                        icon="visibility"
+                                        color="info"
+                                        @click="emit('see-details', job)"
+                                    >
+                                        <q-tooltip>Ver detalhes</q-tooltip>
+                                    </q-btn>
+
+                                    <q-btn
                                         v-if="showEditAction"
                                         flat
                                         round
@@ -289,7 +466,7 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
                                     </q-btn>
 
                                     <q-btn
-                                        v-if="showCloseAction && job.status === JobStatus.OPEN"
+                                        v-if="showCloseAction && job.status === 'open'"
                                         flat
                                         round
                                         size="sm"
@@ -301,7 +478,7 @@ function getExpirationStatus(job: BaseRef<Job>): { text: string; color: string }
                                     </q-btn>
 
                                     <q-btn
-                                        v-if="showReopenAction && job.status === JobStatus.CLOSED"
+                                        v-if="showReopenAction && job.status === 'closed'"
                                         flat
                                         round
                                         size="sm"
