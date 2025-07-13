@@ -1,11 +1,15 @@
-export type ApplicationStatus = 'IN_PROGRESS' | 'REJECTED';
+export enum ApplicationStatus {
+    IN_PROGRESS = 'in_progress',
+    REJECTED = 'rejected',
+}
 
-export type ApplicationStep =
-    | 'MATCH_WITH_JOB'            // 1) Match com o job
-    | 'ACCEPT_JOB'                // 2) Aceitar a vaga (opt-in/subscriber)
-    | 'INTERVIEW'                 // 3) Realizar entrevista
-    | 'RANKING'                   // 4) Ser ranqueado entre os top 3*num_de_vagas para passar para a proxima etapa
-    | 'FINALIST';                 // 5) Ser finalista (Foi ranqueado bem em relação ao número de vagas)
+export enum ApplicationStep {
+    MATCH_WITH_JOB = 'match_with_job',            // 1) Match com o job
+    ACCEPT_JOB = 'accept_job',                    // 2) Aceitar a vaga (opt-in/subscriber)
+    INTERVIEW = 'interview',                      // 3) Realizar entrevista
+    RANKING = 'ranking',                          // 4) Ser ranqueado entre os top 3*num_de_vagas para passar para a proxima etapa
+    FINALIST = 'finalist',                         // 5) Ser finalista (Foi ranqueado bem em relação ao número de vagas)
+}
 
 export interface Application {
     jobId: string;                            // ID da vaga
