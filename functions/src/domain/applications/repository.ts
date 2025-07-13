@@ -14,10 +14,12 @@ export interface ApplicationsRepositoryI {
     getDocRef(applicationId: string): firestore.DocumentReference<Application>;
 
     setApplication(applicationId: string, data: Application): Promise<void>;
+    addApplication(data: Application): Promise<AdminBaseRef<Application>>;
     updateApplication(applicationId: string, data: Partial<Application>): Promise<void>;
 
     getApplicationById(applicationId: string): Promise<AdminBaseRef<Application> | null>;
     getApplicationsByStepAndStatus(step: ApplicationStep, status: ApplicationStatus): Promise<AdminBaseRef<Application>[]>;
+    getApplicationByJobAndConversation(jobId: string, conversationId: string): Promise<AdminBaseRef<Application> | null>;
 }
 
 /**
@@ -53,6 +55,25 @@ export class ApplicationsRepositoryServerSDK implements ApplicationsRepositoryI 
             await this.getDocRef(applicationId).set(data);
         } catch (error) {
             throw new Error(`Erro ao definir Application com ID ${applicationId}: ${error}`);
+        }
+    }
+
+    /**
+     * Adiciona uma nova Application com ID gerado automaticamente.
+     * @param data - Os dados da Application a serem armazenados.
+     * @returns A Application criada com o ID gerado.
+     * @throws Error se a operação falhar.
+     */
+    async addApplication(data: Application): Promise<AdminBaseRef<Application>> {
+        try {
+            const docRef = this.getCollection().doc(); // Gera ID automaticamente
+            await docRef.set(data);
+
+            const doc = await docRef.get();
+            const queryDoc = doc as QueryDocumentSnapshot<Application>;
+            return convertDoc(queryDoc);
+        } catch (error) {
+            throw new Error(`Erro ao adicionar Application: ${error}`);
         }
     }
 
@@ -110,6 +131,30 @@ export class ApplicationsRepositoryServerSDK implements ApplicationsRepositoryI 
             return snapshot.docs.map(doc => convertDoc(doc));
         } catch (error) {
             throw new Error(`Erro ao buscar Applications com step ${step} e status ${status}: ${error}`);
+        }
+    }
+
+    /**
+     * Busca uma Application por jobId e conversationId.
+     * @param jobId - O ID do job.
+     * @param conversationId - O ID da conversation.
+     * @returns A Application se encontrada, ou null se não existir.
+     * @throws Error se a operação de busca falhar.
+     */
+    async getApplicationByJobAndConversation(jobId: string, conversationId: string): Promise<AdminBaseRef<Application> | null> {
+        try {
+            const snapshot = await this.getCollection()
+                .where('jobId', '==', jobId)
+                .where('conversationId', '==', conversationId)
+                .limit(1)
+                .get();
+
+            if (snapshot.empty || snapshot.docs.length === 0) return null;
+
+            const doc = snapshot.docs[0] as QueryDocumentSnapshot<Application>;
+            return convertDoc(doc);
+        } catch (error) {
+            throw new Error(`Erro ao buscar Application com jobId ${jobId} e conversationId ${conversationId}: ${error}`);
         }
     }
 }
