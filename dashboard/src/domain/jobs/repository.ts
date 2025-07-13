@@ -10,8 +10,8 @@ interface JobRepositoryI {
     updateJobWithUpdate(jobId: string, data: Partial<Job>): Promise<void>;
     getJob(jobId: string): Promise<BaseRef<Job> | null>;
     getJobsByStatus(status: JobStatus, storeId: string): Promise<BaseRef<Job>[]>;
-    getJobsByCreator(creatorConversationId: string): Promise<BaseRef<Job>[]>;
-    getAllJobs(): Promise<BaseRef<Job>[]>;
+    getJobsByCreator(creatorConversationId: string, storeId: string): Promise<BaseRef<Job>[]>;
+    getAllJobs(storeId: string): Promise<BaseRef<Job>[]>;
 }
 
 export class JobRepositoryWebSDK implements JobRepositoryI {
@@ -51,19 +51,21 @@ export class JobRepositoryWebSDK implements JobRepositoryI {
         return jobsSnap.docs.map(doc => convertDoc(doc) as BaseRef<Job>);
     }
 
-    async getJobsByCreator(creatorConversationId: string): Promise<BaseRef<Job>[]> {
+    async getJobsByCreator(creatorConversationId: string, storeId: string): Promise<BaseRef<Job>[]> {
         const jobsQuery = query(
             collection(getFirestore(), 'jobs') as unknown as Query<Job>,
-            where('creatorConversationId', '==', creatorConversationId)
+            where('creatorConversationId', '==', creatorConversationId),
+            where('storeId', '==', storeId)
         );
         const jobsSnap = await getDocs(jobsQuery);
 
         return jobsSnap.docs.map(doc => convertDoc(doc) as BaseRef<Job>);
     }
 
-    async getAllJobs(): Promise<BaseRef<Job>[]> {
+    async getAllJobs(storeId: string): Promise<BaseRef<Job>[]> {
         const jobsQuery = query(
-            collection(getFirestore(), 'jobs') as unknown as Query<Job>
+            collection(getFirestore(), 'jobs') as unknown as Query<Job>,
+            where('storeId', '==', storeId)
         );
         const jobsSnap = await getDocs(jobsQuery);
 

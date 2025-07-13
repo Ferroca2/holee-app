@@ -16,6 +16,28 @@ import JobDialog from '../components/ui/job-dialog.vue';
 import { useStoresStore } from 'stores/stores';
 import { useSessionStore } from 'stores/session';
 
+// Interface for job form data
+interface JobFormData {
+    title: string;
+    description: string;
+    location: string;
+    numberOfPositions: number | string;
+    seniorityLevel: string;
+    requiredSkills: string[];
+    niceToHaveSkills: string[];
+    languagesRequired: string[];
+    salaryRange: {
+        min: number | string;
+        max: number | string;
+    };
+    minExperienceYears: number | string;
+    workMode: 'remote' | 'hybrid' | 'on_site';
+    jobType: 'full_time' | 'part_time' | 'contract';
+    applyStart: string;
+    applyEnd: string;
+    status: JobStatus;
+}
+
 const error = useError();
 const success = useSuccess();
 const confirm = useConfirm();
@@ -105,7 +127,7 @@ const creatorOptions = computed(() => {
 async function fetchOpenJobs() {
     loadingOpen.value = true;
     try {
-        const response = await jobRepository.getJobsByStatus(JobStatus.OPEN, storesStore.currentStore!.id);
+        const response = await jobRepository.getJobsByStatus('open', storesStore.currentStore!.id);
         openJobs.value = response;
     } catch (err) {
         error('Erro ao carregar vagas abertas');
@@ -118,7 +140,7 @@ async function fetchOpenJobs() {
 async function fetchClosedJobs() {
     loadingClosed.value = true;
     try {
-        const response = await jobRepository.getJobsByStatus(JobStatus.CLOSED, storesStore.currentStore!.id);
+        const response = await jobRepository.getJobsByStatus('closed', storesStore.currentStore!.id);
         closedJobs.value = response;
     } catch (err) {
         error('Erro ao carregar vagas fechadas');
@@ -159,7 +181,7 @@ async function closeJob(job: BaseRef<Job>) {
     if (!confirmed) return;
 
     try {
-        await jobRepository.updateJob(job.id, { status: JobStatus.CLOSED });
+        await jobRepository.updateJob(job.id, { status: 'closed' });
         success('Vaga fechada com sucesso');
         await refreshJobs();
     } catch (err) {
@@ -179,7 +201,7 @@ async function reopenJob(job: BaseRef<Job>) {
     if (!confirmed) return;
 
     try {
-        await jobRepository.updateJob(job.id, { status: JobStatus.OPEN });
+        await jobRepository.updateJob(job.id, { status: 'open' });
         success('Vaga reaberta com sucesso');
         await refreshJobs();
     } catch (err) {
@@ -189,18 +211,30 @@ async function reopenJob(job: BaseRef<Job>) {
 }
 
 // Form functions
-async function handleSaveJob(formData: { title: string; description: string; requirements: string[]; applyStart: string; applyEnd: string }) {
+async function handleSaveJob(formData: JobFormData) {
     loading.value = true;
     try {
         const jobData: Job = {
+            storeId: storesStore.currentStore!.id,
             title: formData.title,
             description: formData.description,
-            requirements: formData.requirements,
+            location: formData.location,
+            numberOfPositions: formData.numberOfPositions ? Number(formData.numberOfPositions) : 1,
+            seniorityLevel: formData.seniorityLevel,
+            requiredSkills: formData.requiredSkills,
+            niceToHaveSkills: formData.niceToHaveSkills,
+            languagesRequired: formData.languagesRequired,
+            salaryRange: formData.salaryRange.min && formData.salaryRange.max ? {
+                min: Number(formData.salaryRange.min),
+                max: Number(formData.salaryRange.max),
+            } : undefined,
+            minExperienceYears: formData.minExperienceYears ? Number(formData.minExperienceYears) : undefined,
+            workMode: formData.workMode,
+            jobType: formData.jobType,
             applyStart: new Date(formData.applyStart).getTime(),
             applyEnd: new Date(formData.applyEnd).getTime(),
             creatorConversationId: sessionStore.user!.uid,
-            storeId: storesStore.currentStore!.id,
-            status: JobStatus.OPEN,
+            status: formData.status,
             createdAt: Date.now(),
         };
 
@@ -221,6 +255,7 @@ async function handleSaveJob(formData: { title: string; description: string; req
         loading.value = false;
     }
 }
+
 // Initialize
 onMounted(() => {
     refreshJobs();
