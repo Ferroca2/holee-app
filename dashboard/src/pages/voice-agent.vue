@@ -133,25 +133,23 @@ const buildDynamicVariables = () => {
         salaryRangemax: job.salaryRange?.max?.toString() || '',
 
         // Candidate information
-        candidateFullName: candidate.relevantData?.fullName || candidate.name || '',
-        candidateRegion: candidate.relevantData?.region || '',
+        candidateName: candidate.relevantData?.name || candidate.name || '',
+        candidateRegion: candidate.relevantData?.address || '',
         candidateExpectedSalary: candidate.relevantData?.expectedSalary?.toString() || '',
         candidateEmploymentStatus: candidate.employed ? 'Empregado' : 'Desempregado',
         candidateInterests: Array.isArray(candidate.relevantData?.interests) ? candidate.relevantData.interests.join(', ') : '',
-        candidateLinkedIn: candidate.relevantData?.linkedin?.url || '',
-        candidateResumeUrl: candidate.relevantData?.resume?.url || '',
+        candidateLinkedIn: candidate.relevantData?.linkedin || '',
 
         // Conditional variables (if_xxx)
         if_salaryRange: createConditional(Boolean(job.salaryRange?.min && job.salaryRange?.max)),
-        if_candidateFullName: createConditional(Boolean(candidate.relevantData?.fullName || candidate.name)),
+        if_candidateName: createConditional(Boolean(candidate.relevantData?.name || candidate.name)),
         if_niceToHaveSkills: createConditional(Boolean(job.niceToHaveSkills && job.niceToHaveSkills.length > 0)),
         if_languagesRequired: createConditional(Boolean(job.languagesRequired && job.languagesRequired.length > 0)),
         if_candidateInterests: createConditional(Boolean(candidate.relevantData?.interests && candidate.relevantData.interests.length > 0)),
-        if_candidateRegion: createConditional(Boolean(candidate.relevantData?.region)),
+        if_candidateRegion: createConditional(Boolean(candidate.relevantData?.address)),
         if_location: createConditional(Boolean(job.location)),
         if_workMode: createConditional(Boolean(job.workMode)),
         if_minExperienceYears: createConditional(Boolean(job.minExperienceYears && job.minExperienceYears > 0)),
-        if_candidateResumeUrl: createConditional(Boolean(candidate.relevantData?.resume?.url)),
         if_candidateEmployed: createConditional(Boolean(candidate.employed)),
         if_candidateExpectedSalary: createConditional(Boolean(candidate.relevantData?.expectedSalary)),
         if_numberOfPositions: createConditional(Boolean(job.numberOfPositions && job.numberOfPositions > 1)),
@@ -489,7 +487,7 @@ const jobOptions = computed(() => {
 
 const candidateOptions = computed(() => {
     return candidates.value.map(candidate => ({
-        label: candidate.relevantData?.fullName || candidate.name || 'Candidato',
+        label: candidate.relevantData?.name || candidate.name || 'Candidato',
         value: candidate.id,
         candidate: candidate,
     }));
@@ -589,7 +587,7 @@ const onCandidateChange = (candidateId: string) => {
                                 v-if="selectedCandidate"
                                 class="text-caption text-grey-6 q-mt-sm"
                             >
-                                {{ selectedCandidate.relevantData?.fullName || selectedCandidate.name }} - {{ selectedCandidate.relevantData?.region }}
+                                {{ selectedCandidate.relevantData?.name || selectedCandidate.name }} - {{ selectedCandidate.relevantData?.address }}
                             </div>
                         </q-card-section>
                     </q-card>

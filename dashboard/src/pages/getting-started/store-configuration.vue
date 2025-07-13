@@ -11,6 +11,7 @@ import BaseInput from 'components/ui/base-input.vue';
 import BaseFileUpload from 'components/ui/base-file-upload.vue';
 import NavigationButtons from 'components/ui/navigation-buttons.vue';
 import { uploadImageToStorage } from 'src/utils/storage';
+import { phoneToString } from 'src/utils/phone';
 
 const router = useRouter();
 const onboardingStore = useOnboardingStore();
@@ -187,6 +188,7 @@ const onSubmit = async () => {
 
         const createData = {
             ...data,
+            phone: phoneToString(data.phone),
             createdAt: Date.now(),
             updatedAt: Date.now(),
         };

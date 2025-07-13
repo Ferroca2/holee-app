@@ -144,25 +144,23 @@ const buildDynamicVariables = () => {
         salaryRangemax: jobData.salaryRange?.max?.toString() || '',
 
         // Candidate information
-        candidateFullName: candidateData.relevantData?.fullName || candidateData.name || '',
-        candidateRegion: candidateData.relevantData?.region || '',
+        candidateName: candidateData.relevantData?.name || candidateData.name || '',
+        candidateRegion: candidateData.relevantData?.address || '',
         candidateExpectedSalary: candidateData.relevantData?.expectedSalary?.toString() || '',
         candidateEmploymentStatus: candidateData.employed ? 'Empregado' : 'Desempregado',
         candidateInterests: Array.isArray(candidateData.relevantData?.interests) ? candidateData.relevantData.interests.join(', ') : '',
-        candidateLinkedIn: candidateData.relevantData?.linkedin?.url || '',
-        candidateResumeUrl: candidateData.relevantData?.resume?.url || '',
+        candidateLinkedIn: candidateData.relevantData?.linkedin || '',
 
         // Conditional variables (if_xxx)
         ifSalaryRange: createConditional(Boolean(jobData.salaryRange?.min && jobData.salaryRange?.max)),
-        ifCandidateFullName: createConditional(Boolean(candidateData.relevantData?.fullName || candidateData.name)),
+        ifCandidateName: createConditional(Boolean(candidateData.relevantData?.name || candidateData.name)),
         ifNiceToHaveSkills: createConditional(Boolean(jobData.niceToHaveSkills && jobData.niceToHaveSkills.length > 0)),
         ifLanguagesRequired: createConditional(Boolean(jobData.languagesRequired && jobData.languagesRequired.length > 0)),
         ifCandidateInterests: createConditional(Boolean(candidateData.relevantData?.interests && candidateData.relevantData.interests.length > 0)),
-        ifCandidateRegion: createConditional(Boolean(candidateData.relevantData?.region)),
+        ifCandidateRegion: createConditional(Boolean(candidateData.relevantData?.address)),
         ifLocation: createConditional(Boolean(jobData.location)),
         ifWorkMode: createConditional(Boolean(jobData.workMode)),
         ifMinExperienceYears: createConditional(Boolean(jobData.minExperienceYears && jobData.minExperienceYears > 0)),
-        ifCandidateResumeUrl: createConditional(Boolean(candidateData.relevantData?.resume?.url)),
         ifCandidateEmployed: createConditional(Boolean(candidateData.employed)),
         ifCandidateExpectedSalary: createConditional(Boolean(candidateData.relevantData?.expectedSalary)),
         ifNumberOfPositions: createConditional(Boolean(jobData.numberOfPositions && jobData.numberOfPositions > 1)),
@@ -573,10 +571,10 @@ const getAgentModeColor = () => {
                                     Candidato
                                 </div>
                                 <div class="text-subtitle1">
-                                    {{ candidate.relevantData?.fullName || candidate.name }}
+                                    {{ candidate.relevantData?.name || candidate.name }}
                                 </div>
                                 <div class="text-caption text-grey-6">
-                                    {{ candidate.relevantData?.region }}
+                                    {{ candidate.relevantData?.address }}
                                 </div>
                             </q-card-section>
                         </q-card>

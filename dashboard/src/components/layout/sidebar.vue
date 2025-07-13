@@ -139,7 +139,7 @@ const miniLogoSrc = computed(() => {
                 {{ currentStore.name }}
             </div>
             <div class="text-caption text-grey">
-                Estabelecimento
+                Empresa
             </div>
         </div>
 
@@ -163,7 +163,7 @@ const miniLogoSrc = computed(() => {
                             {{ currentStore.name }}
                         </div>
                         <div class="text-caption text-grey">
-                            Estabelecimento
+                            Empresa
                         </div>
                     </q-item-section>
                     <q-item-section
@@ -199,7 +199,7 @@ const miniLogoSrc = computed(() => {
                                         {{ currentStore.name }}
                                     </div>
                                     <div class="text-caption text-grey">
-                                        Estabelecimento
+                                        Empresa
                                     </div>
                                 </q-item-section>
                             </q-item>

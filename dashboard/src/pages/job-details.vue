@@ -5,8 +5,10 @@ import { useQuasar } from 'quasar';
 import { useStoresStore } from 'stores/stores';
 import jobRepository from 'src/domain/jobs/repository';
 import applicationRepository from 'src/domain/applications/repository';
+import conversationRepository from 'src/domain/conversations/repository';
 import { Job, JobStatus, WorkMode, JobType } from 'src/domain/jobs/entity';
 import { Application, ApplicationStep } from 'src/domain/applications/entity';
+import { Conversation } from 'src/domain/conversations/entity';
 import { BaseRef } from 'src/domain';
 import {
     Chart as ChartJS,
@@ -21,7 +23,7 @@ import {
     Legend,
     Colors,
 } from 'chart.js';
-import { Pie as PieChart } from 'vue-chartjs';
+import { Pie as PieChart, Bar as BarChart } from 'vue-chartjs';
 import StatCard from 'src/components/ui/stat-card.vue';
 import BaseButton from 'src/components/ui/base-button.vue';
 import useError from '../hooks/useError';
@@ -53,6 +55,7 @@ const jobId = computed(() => route.params.jobId as string);
 // Data
 const job = ref<BaseRef<Job> | null>(null);
 const applications = ref<BaseRef<Application>[]>([]);
+const conversations = ref<Map<string, BaseRef<Conversation>>>(new Map());
 const loading = ref(true);
 const activeTab = ref('statistics');
 
@@ -217,6 +220,104 @@ const pieChartOptions = computed(() => ({
     },
 }));
 
+// Funnel chart data for recruitment pipeline
+const funnelChartData = computed(() => {
+    // Define funnel steps in order from top to bottom
+    const funnelSteps = [
+        { step: ApplicationStep.MATCH_WITH_JOB, label: 'Match com Vaga', color: '#2196F3' },
+        { step: ApplicationStep.ACCEPT_JOB, label: 'Aceitaram Vaga', color: '#4CAF50' },
+        { step: ApplicationStep.INTERVIEW, label: 'Entrevista', color: '#FF9800' },
+        { step: ApplicationStep.RANKING, label: 'Ranking', color: '#9C27B0' },
+        { step: ApplicationStep.FINALIST, label: 'Finalistas', color: '#FFD700' },
+    ];
+
+    const labels: string[] = [];
+    const data: number[] = [];
+    const backgroundColor: string[] = [];
+
+    funnelSteps.forEach(({ step, label, color }) => {
+        const count = applicationsByStep.value[step].length;
+        labels.push(label);
+        data.push(count);
+        backgroundColor.push(color);
+    });
+
+    return {
+        labels,
+        datasets: [
+            {
+                data,
+                backgroundColor,
+                borderWidth: 2,
+                borderColor: '#fff',
+                borderRadius: 4,
+            },
+        ],
+    };
+});
+
+const funnelChartOptions = computed(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y' as const,
+    scales: {
+        x: {
+            beginAtZero: true,
+            grid: {
+                display: false,
+            },
+            ticks: {
+                stepSize: 1,
+                font: {
+                    size: 12,
+                },
+            },
+        },
+        y: {
+            grid: {
+                display: false,
+            },
+            ticks: {
+                font: {
+                    size: 12,
+                    weight: 'bold' as const,
+                },
+            },
+        },
+    },
+    plugins: {
+        legend: {
+            display: false,
+        },
+        tooltip: {
+            backgroundColor: 'white',
+            titleColor: '#1e293b',
+            bodyColor: '#374151',
+            bodyFont: {
+                weight: 'bold' as const,
+                size: 14,
+            },
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: true,
+            borderWidth: 1,
+            borderColor: 'rgba(0, 0, 0, 0.05)',
+            callbacks: {
+                label: function(context: any) {
+                    const total = Math.max(...context.dataset.data);
+                    const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : '0';
+                    return `${context.label}: ${context.raw} candidatos (${percentage}% do total inicial)`;
+                },
+            },
+        },
+    },
+    elements: {
+        bar: {
+            borderRadius: 4,
+        },
+    },
+}));
+
 // Utility functions
 function formatDate(timestamp: number) {
     return new Date(timestamp).toLocaleDateString('pt-BR');
@@ -290,6 +391,54 @@ function formatSalaryRange(salaryRange?: { min: number; max: number }): string {
     }
 }
 
+// Conversation/Candidate utility functions
+function getConversationForApplication(application: BaseRef<Application>): BaseRef<Conversation> | null {
+    return conversations.value.get(application.conversationId) || null;
+}
+
+function getCandidateName(conversation: BaseRef<Conversation> | null): string {
+    return conversation?.name || 'Nome não disponível';
+}
+
+function getCandidatePhoto(conversation: BaseRef<Conversation> | null): string {
+    return conversation?.photo || 'https://via.placeholder.com/150x150/cccccc/ffffff?text=?';
+}
+
+function getCandidateLocation(conversation: BaseRef<Conversation> | null): string {
+    return conversation?.relevantData?.address || 'Localização não informada';
+}
+
+function getCandidateExpectedSalary(conversation: BaseRef<Conversation> | null): string {
+    if (!conversation?.relevantData?.expectedSalary) return 'Não informado';
+
+    const formatter = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    });
+
+    return formatter.format(conversation.relevantData.expectedSalary);
+}
+
+function getCandidateInterests(conversation: BaseRef<Conversation> | null): string {
+    return conversation?.relevantData?.interests || 'Interesses não informados';
+}
+
+function getCandidateLinkedin(conversation: BaseRef<Conversation> | null): string {
+    return conversation?.relevantData?.linkedin || '';
+}
+
+function getCandidateEmploymentStatus(conversation: BaseRef<Conversation> | null): string {
+    if (!conversation) return 'Status não informado';
+    return conversation.employed ? 'Empregado' : 'Desempregado';
+}
+
+function getCandidateProfileStatus(conversation: BaseRef<Conversation> | null): string {
+    if (!conversation) return 'Status não informado';
+    return conversation.profileCompleted ? 'Perfil Completo' : 'Perfil Incompleto';
+}
+
 // API functions
 async function fetchJobDetails() {
     if (!storeId.value || !jobId.value) return;
@@ -303,6 +452,31 @@ async function fetchJobDetails() {
 
         job.value = jobResult;
         applications.value = applicationsResult;
+
+        // Fetch conversations for each application
+        const conversationMap = new Map<string, BaseRef<Conversation>>();
+        const uniqueConversationIds = [...new Set(applicationsResult.map(app => app.conversationId))];
+
+        const conversationPromises = uniqueConversationIds.map(async conversationId => {
+            try {
+                const conversation = await conversationRepository.getConversation(conversationId);
+                if (conversation) {
+                    return { conversationId, conversation };
+                }
+            } catch (convErr) {
+                console.error(`Error fetching conversation ${conversationId}:`, convErr);
+            }
+            return null;
+        });
+
+        const conversationResults = await Promise.all(conversationPromises);
+        conversationResults.forEach(result => {
+            if (result) {
+                conversationMap.set(result.conversationId, result.conversation);
+            }
+        });
+
+        conversations.value = conversationMap;
     } catch (err) {
         console.error('Error fetching job details:', err);
         error('Erro ao carregar detalhes da vaga');
@@ -661,7 +835,7 @@ onMounted(() => {
                                         <q-icon
                                             name="o_pie_chart"
                                             size="24px"
-                                            class="card-icon text-purple-7"
+                                            class="card-icon text-accent"
                                         />
                                     </div>
                                 </q-card-section>
@@ -695,7 +869,55 @@ onMounted(() => {
                             </q-card>
                         </div>
                         <div class="col-12 col-md-6">
-                            <!-- Additional stats or summary could go here -->
+                            <q-card
+                                v-if="funnelChartData && funnelChartData.labels.length > 0"
+                                class="chart-card"
+                            >
+                                <q-card-section class="q-pb-none">
+                                    <div class="chart-title-container">
+                                        <div>
+                                            <div class="text-h6 text-weight-bold text-grey-9">
+                                                Funil de Recrutamento
+                                            </div>
+                                            <div class="text-grey-7 text-caption q-mt-xs">
+                                                Progressão dos candidatos por etapa
+                                            </div>
+                                        </div>
+                                        <q-icon
+                                            name="o_filter_alt"
+                                            size="24px"
+                                            class="card-icon text-accent"
+                                        />
+                                    </div>
+                                </q-card-section>
+                                <q-card-section>
+                                    <div
+                                        class="chart-container"
+                                        style="height: 300px;"
+                                    >
+                                        <bar-chart
+                                            :data="funnelChartData"
+                                            :options="funnelChartOptions"
+                                        />
+                                    </div>
+                                </q-card-section>
+                            </q-card>
+                            <q-card
+                                v-else
+                                class="text-center q-pa-xl"
+                            >
+                                <q-icon
+                                    name="filter_alt"
+                                    size="60px"
+                                    color="grey-5"
+                                />
+                                <div class="text-h6 text-grey-7 q-mt-md">
+                                    Funil vazio
+                                </div>
+                                <div class="text-caption text-grey-5">
+                                    O funil de recrutamento aparecerá quando houver candidaturas
+                                </div>
+                            </q-card>
                         </div>
                     </div>
                 </q-tab-panel>
@@ -706,35 +928,176 @@ onMounted(() => {
                     class="q-pa-md"
                 >
                     <div v-if="applicationsByStep[ApplicationStep.MATCH_WITH_JOB].length > 0">
-                        <div class="q-gutter-md">
-                            <q-card
+                        <div class="q-gutter-sm bg-grey-1">
+                            <q-expansion-item
                                 v-for="application in applicationsByStep[ApplicationStep.MATCH_WITH_JOB]"
                                 :key="application.id"
-                                class="application-card"
+                                class="candidate-expansion-card"
+                                header-class="candidate-expansion-header"
                             >
-                                <q-card-section>
-                                    <div class="row items-center justify-between">
-                                        <div>
-                                            <div class="text-weight-bold">
-                                                ID: {{ application.id }}
-                                            </div>
-                                            <div class="text-caption text-grey-7">
-                                                Conversa: {{ application.conversationId }}
+                                <!-- Header - Always visible -->
+                                <template #header>
+                                    <q-item-section avatar>
+                                        <q-avatar>
+                                            <img :src="getCandidatePhoto(getConversationForApplication(application))">
+                                        </q-avatar>
+                                    </q-item-section>
+                                    <q-item-section>
+                                        <div class="row items-center justify-between full-width">
+                                            <q-item-label class="text-weight-bold text-body1">
+                                                {{ getCandidateName(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div
+                                                class="status-badge status-match"
+                                            >
+                                                <q-icon
+                                                    name="person_search"
+                                                    size="14px"
+                                                    class="q-mr-xs"
+                                                />
+                                                {{ applicationStepLabels[application.currentStep] }}
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                            <q-chip
-                                                color="primary"
-                                                :label="applicationStepLabels[application.currentStep]"
-                                                size="sm"
-                                            />
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-7"
+                                            >
+                                                {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div class="text-caption text-grey-8">
+                                                {{ formatDateTime(application.createdAt) }}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="q-mt-sm text-caption text-grey-6">
-                                        Criado em: {{ formatDateTime(application.createdAt) }}
-                                    </div>
-                                </q-card-section>
-                            </q-card>
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-6"
+                                            >
+                                                Salário esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                        </div>
+                                    </q-item-section>
+                                </template>
+
+                                <!-- Expanded content -->
+                                <q-card
+                                    flat
+                                    class="expansion-content"
+                                >
+                                    <q-card-section class="q-pa-md">
+                                        <div class="row items-start">
+                                            <!-- Left side: Candidate Information -->
+                                            <div class="col q-pr-md">
+                                                <div class="q-gutter-xs">
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="badge"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        ID da Candidatura: {{ application.id }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="person"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Nome: {{ getCandidateName(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="place"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Localização: {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="attach_money"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Salário Esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="work"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status de Emprego: {{ getCandidateEmploymentStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="account_circle"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status do Perfil: {{ getCandidateProfileStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="interests"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Interesses: {{ getCandidateInterests(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="getCandidateLinkedin(getConversationForApplication(application))"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="link"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        LinkedIn:
+                                                        <a
+                                                            :href="getCandidateLinkedin(getConversationForApplication(application))"
+                                                            target="_blank"
+                                                            class="q-ml-xs text-primary"
+                                                        >
+                                                            Ver perfil
+                                                        </a>
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="event"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Candidatura criada em: {{ formatDateTime(application.createdAt) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="application.updatedAt && application.updatedAt !== application.createdAt"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="update"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Última atualização: {{ formatDateTime(application.updatedAt) }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </q-card-section>
+                                </q-card>
+                            </q-expansion-item>
                         </div>
                     </div>
                     <div
@@ -761,35 +1124,174 @@ onMounted(() => {
                     class="q-pa-md"
                 >
                     <div v-if="applicationsByStep[ApplicationStep.ACCEPT_JOB].length > 0">
-                        <div class="q-gutter-md">
-                            <q-card
+                        <div class="q-gutter-sm bg-grey-1">
+                            <q-expansion-item
                                 v-for="application in applicationsByStep[ApplicationStep.ACCEPT_JOB]"
                                 :key="application.id"
-                                class="application-card"
+                                class="candidate-expansion-card"
+                                header-class="candidate-expansion-header"
                             >
-                                <q-card-section>
-                                    <div class="row items-center justify-between">
-                                        <div>
-                                            <div class="text-weight-bold">
-                                                ID: {{ application.id }}
-                                            </div>
-                                            <div class="text-caption text-grey-7">
-                                                Conversa: {{ application.conversationId }}
+                                <!-- Header - Always visible -->
+                                <template #header>
+                                    <q-item-section avatar>
+                                        <q-avatar>
+                                            <img :src="getCandidatePhoto(getConversationForApplication(application))">
+                                        </q-avatar>
+                                    </q-item-section>
+                                    <q-item-section>
+                                        <div class="row items-center justify-between full-width">
+                                            <q-item-label class="text-weight-bold text-body1">
+                                                {{ getCandidateName(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div class="status-badge status-accept">
+                                                <q-icon
+                                                    name="thumb_up"
+                                                    size="14px"
+                                                    class="q-mr-xs"
+                                                />
+                                                {{ applicationStepLabels[application.currentStep] }}
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                            <q-chip
-                                                color="primary"
-                                                :label="applicationStepLabels[application.currentStep]"
-                                                size="sm"
-                                            />
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-7"
+                                            >
+                                                {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div class="text-caption text-grey-8">
+                                                {{ formatDateTime(application.createdAt) }}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="q-mt-sm text-caption text-grey-6">
-                                        Criado em: {{ formatDateTime(application.createdAt) }}
-                                    </div>
-                                </q-card-section>
-                            </q-card>
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-6"
+                                            >
+                                                Salário esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                        </div>
+                                    </q-item-section>
+                                </template>
+
+                                <!-- Expanded content -->
+                                <q-card
+                                    flat
+                                    class="expansion-content"
+                                >
+                                    <q-card-section class="q-pa-md">
+                                        <div class="row items-start">
+                                            <!-- Left side: Candidate Information -->
+                                            <div class="col q-pr-md">
+                                                <div class="q-gutter-xs">
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="badge"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        ID da Candidatura: {{ application.id }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="person"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Nome: {{ getCandidateName(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="place"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Localização: {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="attach_money"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Salário Esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="work"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status de Emprego: {{ getCandidateEmploymentStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="account_circle"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status do Perfil: {{ getCandidateProfileStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="interests"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Interesses: {{ getCandidateInterests(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="getCandidateLinkedin(getConversationForApplication(application))"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="link"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        LinkedIn:
+                                                        <a
+                                                            :href="getCandidateLinkedin(getConversationForApplication(application))"
+                                                            target="_blank"
+                                                            class="q-ml-xs text-primary"
+                                                        >
+                                                            Ver perfil
+                                                        </a>
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="event"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Candidatura criada em: {{ formatDateTime(application.createdAt) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="application.updatedAt && application.updatedAt !== application.createdAt"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="update"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Última atualização: {{ formatDateTime(application.updatedAt) }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </q-card-section>
+                                </q-card>
+                            </q-expansion-item>
                         </div>
                     </div>
                     <div
@@ -816,35 +1318,174 @@ onMounted(() => {
                     class="q-pa-md"
                 >
                     <div v-if="applicationsByStep[ApplicationStep.INTERVIEW].length > 0">
-                        <div class="q-gutter-md">
-                            <q-card
+                        <div class="q-gutter-sm bg-grey-1">
+                            <q-expansion-item
                                 v-for="application in applicationsByStep[ApplicationStep.INTERVIEW]"
                                 :key="application.id"
-                                class="application-card"
+                                class="candidate-expansion-card"
+                                header-class="candidate-expansion-header"
                             >
-                                <q-card-section>
-                                    <div class="row items-center justify-between">
-                                        <div>
-                                            <div class="text-weight-bold">
-                                                ID: {{ application.id }}
-                                            </div>
-                                            <div class="text-caption text-grey-7">
-                                                Conversa: {{ application.conversationId }}
+                                <!-- Header - Always visible -->
+                                <template #header>
+                                    <q-item-section avatar>
+                                        <q-avatar>
+                                            <img :src="getCandidatePhoto(getConversationForApplication(application))">
+                                        </q-avatar>
+                                    </q-item-section>
+                                    <q-item-section>
+                                        <div class="row items-center justify-between full-width">
+                                            <q-item-label class="text-weight-bold text-body1">
+                                                {{ getCandidateName(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div class="status-badge status-interview">
+                                                <q-icon
+                                                    name="record_voice_over"
+                                                    size="14px"
+                                                    class="q-mr-xs"
+                                                />
+                                                {{ applicationStepLabels[application.currentStep] }}
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                            <q-chip
-                                                color="primary"
-                                                :label="applicationStepLabels[application.currentStep]"
-                                                size="sm"
-                                            />
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-7"
+                                            >
+                                                {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div class="text-caption text-grey-8">
+                                                {{ formatDateTime(application.createdAt) }}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="q-mt-sm text-caption text-grey-6">
-                                        Criado em: {{ formatDateTime(application.createdAt) }}
-                                    </div>
-                                </q-card-section>
-                            </q-card>
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-6"
+                                            >
+                                                Salário esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                        </div>
+                                    </q-item-section>
+                                </template>
+
+                                <!-- Expanded content -->
+                                <q-card
+                                    flat
+                                    class="expansion-content"
+                                >
+                                    <q-card-section class="q-pa-md">
+                                        <div class="row items-start">
+                                            <!-- Left side: Candidate Information -->
+                                            <div class="col q-pr-md">
+                                                <div class="q-gutter-xs">
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="badge"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        ID da Candidatura: {{ application.id }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="person"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Nome: {{ getCandidateName(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="place"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Localização: {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="attach_money"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Salário Esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="work"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status de Emprego: {{ getCandidateEmploymentStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="account_circle"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status do Perfil: {{ getCandidateProfileStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="interests"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Interesses: {{ getCandidateInterests(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="getCandidateLinkedin(getConversationForApplication(application))"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="link"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        LinkedIn:
+                                                        <a
+                                                            :href="getCandidateLinkedin(getConversationForApplication(application))"
+                                                            target="_blank"
+                                                            class="q-ml-xs text-primary"
+                                                        >
+                                                            Ver perfil
+                                                        </a>
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="event"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Candidatura criada em: {{ formatDateTime(application.createdAt) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="application.updatedAt && application.updatedAt !== application.createdAt"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="update"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Última atualização: {{ formatDateTime(application.updatedAt) }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </q-card-section>
+                                </q-card>
+                            </q-expansion-item>
                         </div>
                     </div>
                     <div
@@ -871,35 +1512,174 @@ onMounted(() => {
                     class="q-pa-md"
                 >
                     <div v-if="applicationsByStep[ApplicationStep.RANKING].length > 0">
-                        <div class="q-gutter-md">
-                            <q-card
+                        <div class="q-gutter-sm bg-grey-1">
+                            <q-expansion-item
                                 v-for="application in applicationsByStep[ApplicationStep.RANKING]"
                                 :key="application.id"
-                                class="application-card"
+                                class="candidate-expansion-card"
+                                header-class="candidate-expansion-header"
                             >
-                                <q-card-section>
-                                    <div class="row items-center justify-between">
-                                        <div>
-                                            <div class="text-weight-bold">
-                                                ID: {{ application.id }}
-                                            </div>
-                                            <div class="text-caption text-grey-7">
-                                                Conversa: {{ application.conversationId }}
+                                <!-- Header - Always visible -->
+                                <template #header>
+                                    <q-item-section avatar>
+                                        <q-avatar>
+                                            <img :src="getCandidatePhoto(getConversationForApplication(application))">
+                                        </q-avatar>
+                                    </q-item-section>
+                                    <q-item-section>
+                                        <div class="row items-center justify-between full-width">
+                                            <q-item-label class="text-weight-bold text-body1">
+                                                {{ getCandidateName(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div class="status-badge status-ranking">
+                                                <q-icon
+                                                    name="leaderboard"
+                                                    size="14px"
+                                                    class="q-mr-xs"
+                                                />
+                                                {{ applicationStepLabels[application.currentStep] }}
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                            <q-chip
-                                                color="primary"
-                                                :label="applicationStepLabels[application.currentStep]"
-                                                size="sm"
-                                            />
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-7"
+                                            >
+                                                {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div class="text-caption text-grey-8">
+                                                {{ formatDateTime(application.createdAt) }}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="q-mt-sm text-caption text-grey-6">
-                                        Criado em: {{ formatDateTime(application.createdAt) }}
-                                    </div>
-                                </q-card-section>
-                            </q-card>
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-6"
+                                            >
+                                                Salário esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                        </div>
+                                    </q-item-section>
+                                </template>
+
+                                <!-- Expanded content -->
+                                <q-card
+                                    flat
+                                    class="expansion-content"
+                                >
+                                    <q-card-section class="q-pa-md">
+                                        <div class="row items-start">
+                                            <!-- Left side: Candidate Information -->
+                                            <div class="col q-pr-md">
+                                                <div class="q-gutter-xs">
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="badge"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        ID da Candidatura: {{ application.id }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="person"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Nome: {{ getCandidateName(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="place"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Localização: {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="attach_money"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Salário Esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="work"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status de Emprego: {{ getCandidateEmploymentStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="account_circle"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status do Perfil: {{ getCandidateProfileStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="interests"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Interesses: {{ getCandidateInterests(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="getCandidateLinkedin(getConversationForApplication(application))"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="link"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        LinkedIn:
+                                                        <a
+                                                            :href="getCandidateLinkedin(getConversationForApplication(application))"
+                                                            target="_blank"
+                                                            class="q-ml-xs text-primary"
+                                                        >
+                                                            Ver perfil
+                                                        </a>
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="event"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Candidatura criada em: {{ formatDateTime(application.createdAt) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="application.updatedAt && application.updatedAt !== application.createdAt"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="update"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Última atualização: {{ formatDateTime(application.updatedAt) }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </q-card-section>
+                                </q-card>
+                            </q-expansion-item>
                         </div>
                     </div>
                     <div
@@ -926,35 +1706,174 @@ onMounted(() => {
                     class="q-pa-md"
                 >
                     <div v-if="applicationsByStep[ApplicationStep.FINALIST].length > 0">
-                        <div class="q-gutter-md">
-                            <q-card
+                        <div class="q-gutter-sm bg-grey-1">
+                            <q-expansion-item
                                 v-for="application in applicationsByStep[ApplicationStep.FINALIST]"
                                 :key="application.id"
-                                class="application-card"
+                                class="candidate-expansion-card"
+                                header-class="candidate-expansion-header"
                             >
-                                <q-card-section>
-                                    <div class="row items-center justify-between">
-                                        <div>
-                                            <div class="text-weight-bold">
-                                                ID: {{ application.id }}
-                                            </div>
-                                            <div class="text-caption text-grey-7">
-                                                Conversa: {{ application.conversationId }}
+                                <!-- Header - Always visible -->
+                                <template #header>
+                                    <q-item-section avatar>
+                                        <q-avatar>
+                                            <img :src="getCandidatePhoto(getConversationForApplication(application))">
+                                        </q-avatar>
+                                    </q-item-section>
+                                    <q-item-section>
+                                        <div class="row items-center justify-between full-width">
+                                            <q-item-label class="text-weight-bold text-body1">
+                                                {{ getCandidateName(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div class="status-badge status-finalist">
+                                                <q-icon
+                                                    name="emoji_events"
+                                                    size="14px"
+                                                    class="q-mr-xs"
+                                                />
+                                                {{ applicationStepLabels[application.currentStep] }}
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                            <q-chip
-                                                color="primary"
-                                                :label="applicationStepLabels[application.currentStep]"
-                                                size="sm"
-                                            />
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-7"
+                                            >
+                                                {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                            <div class="text-caption text-grey-8">
+                                                {{ formatDateTime(application.createdAt) }}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="q-mt-sm text-caption text-grey-6">
-                                        Criado em: {{ formatDateTime(application.createdAt) }}
-                                    </div>
-                                </q-card-section>
-                            </q-card>
+                                        <div class="row items-center justify-between full-width q-mt-xs">
+                                            <q-item-label
+                                                caption
+                                                class="text-grey-6"
+                                            >
+                                                Salário esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                            </q-item-label>
+                                        </div>
+                                    </q-item-section>
+                                </template>
+
+                                <!-- Expanded content -->
+                                <q-card
+                                    flat
+                                    class="expansion-content"
+                                >
+                                    <q-card-section class="q-pa-md">
+                                        <div class="row items-start">
+                                            <!-- Left side: Candidate Information -->
+                                            <div class="col q-pr-md">
+                                                <div class="q-gutter-xs">
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="badge"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        ID da Candidatura: {{ application.id }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="person"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Nome: {{ getCandidateName(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="place"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Localização: {{ getCandidateLocation(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="attach_money"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Salário Esperado: {{ getCandidateExpectedSalary(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="work"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status de Emprego: {{ getCandidateEmploymentStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="account_circle"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Status do Perfil: {{ getCandidateProfileStatus(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="interests"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Interesses: {{ getCandidateInterests(getConversationForApplication(application)) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="getCandidateLinkedin(getConversationForApplication(application))"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="link"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        LinkedIn:
+                                                        <a
+                                                            :href="getCandidateLinkedin(getConversationForApplication(application))"
+                                                            target="_blank"
+                                                            class="q-ml-xs text-primary"
+                                                        >
+                                                            Ver perfil
+                                                        </a>
+                                                    </div>
+
+                                                    <div class="text-body2 text-grey-8 row items-center">
+                                                        <q-icon
+                                                            name="event"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Candidatura criada em: {{ formatDateTime(application.createdAt) }}
+                                                    </div>
+
+                                                    <div
+                                                        v-if="application.updatedAt && application.updatedAt !== application.createdAt"
+                                                        class="text-body2 text-grey-8 row items-center"
+                                                    >
+                                                        <q-icon
+                                                            name="update"
+                                                            size="13px"
+                                                            class="q-mr-xs text-grey-7"
+                                                        />
+                                                        Última atualização: {{ formatDateTime(application.updatedAt) }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </q-card-section>
+                                </q-card>
+                            </q-expansion-item>
                         </div>
                     </div>
                     <div
@@ -1091,5 +2010,51 @@ onMounted(() => {
 .status-closed {
     background-color: #fee7e7;
     color: #C10015;
+}
+
+.candidate-expansion-card {
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--app-border);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+    margin-bottom: 8px;
+
+    &:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.candidate-expansion-header {
+    padding: 16px;
+}
+
+.expansion-content {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.status-match {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-accept {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+}
+
+.status-interview {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
+.status-ranking {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.status-finalist {
+    background-color: #fffde7;
+    color: #f9a825;
 }
 </style>
